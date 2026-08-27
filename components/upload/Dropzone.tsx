@@ -10,6 +10,14 @@ export type DropzoneFileInfo = {
   pages: PageAsset[];
 };
 
+/** MB rounds small files (synthetic fixtures, single-page scans) to a
+ * misleading "0.0MB" — show KB below 1MB instead. */
+function formatFileSize(bytes: number): string {
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.max(1, Math.round(kb))}KB`;
+  return `${(kb / 1024).toFixed(1)}MB`;
+}
+
 export function Dropzone({
   label,
   accentWord,
@@ -71,7 +79,7 @@ export function Dropzone({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{value.file.name}</p>
             <p className="text-xs text-muted-foreground">
-              {(value.file.size / (1024 * 1024)).toFixed(1)}MB
+              {formatFileSize(value.file.size)}
               {value.pages.length > 0 &&
                 ` • ${value.pages.length} Page${value.pages.length === 1 ? "" : "s"}`}
             </p>

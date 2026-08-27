@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerSheetPanel";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { QuestionRow } from "./QuestionRow";
 import type { Session } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -143,14 +144,22 @@ export function ReviewScreen({
                 Summary
               </button>
             )}
-            <button
-              type="button"
-              title="Coming soon"
-              disabled
-              className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white opacity-40"
-            >
-              <Download className="size-3.5" /> Export report
-            </button>
+            <Tooltip>
+              <TooltipTrigger
+                type="button"
+                // A native `disabled` button doesn't reliably fire hover
+                // events in Chrome/Safari, which would've silently broken
+                // this tooltip the same way it silently broke the native
+                // `title` this replaces. aria-disabled keeps it inert
+                // (there's no onClick here regardless) while staying
+                // hoverable/focusable.
+                aria-disabled="true"
+                className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white opacity-40 cursor-not-allowed"
+              >
+                <Download className="size-3.5" /> Export report
+              </TooltipTrigger>
+              <TooltipContent>Coming soon</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 

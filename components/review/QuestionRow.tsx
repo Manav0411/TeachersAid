@@ -53,38 +53,50 @@ export function QuestionRow({
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
-      >
-        <span
-          className={cn(
-            "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-            isSelected ? "bg-brand-to text-white" : "bg-secondary text-foreground"
-          )}
+      {/* Two sibling buttons, not a button nested inside a button (invalid
+          HTML — browsers hoist the inner one out, breaking both mouse and
+          keyboard behavior in unpredictable ways). Splitting "select" and
+          "expand" into their own buttons also makes the expand toggle
+          keyboard-reachable at all — previously it was a bare ChevronDown
+          icon with only a mouse onClick, so Tab skipped over it entirely. */}
+      <div className="flex w-full items-center gap-3 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
         >
-          {question.sortKey[0] ?? "?"}
-        </span>
-        <span className={cn("min-w-0 flex-1 truncate text-sm", unanswered && "text-muted-foreground")}>
-          {question.displayNumber}. {question.text}
-        </span>
-        {needsReview && (
-          <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-            Needs review
+          <span
+            className={cn(
+              "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+              isSelected ? "bg-brand-to text-white" : "bg-secondary text-foreground"
+            )}
+          >
+            {question.sortKey[0] ?? "?"}
           </span>
-        )}
-        <span className={cn("shrink-0 text-xs font-semibold tabular-nums", scoreChipClass(grade))}>
-          {grade ? `${grade.awarded}/${grade.max}` : "—"}
-        </span>
-        <ChevronDown
-          className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-180")}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand();
-          }}
-        />
-      </button>
+          <span className={cn("min-w-0 flex-1 truncate text-sm", unanswered && "text-muted-foreground")}>
+            {question.displayNumber}. {question.text}
+          </span>
+          {needsReview && (
+            <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+              Needs review
+            </span>
+          )}
+          <span className={cn("shrink-0 text-xs font-semibold tabular-nums", scoreChipClass(grade))}>
+            {grade ? `${grade.awarded}/${grade.max}` : "—"}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? "Collapse details" : "Expand details"}
+          className="shrink-0 rounded p-0.5 hover:bg-secondary"
+        >
+          <ChevronDown
+            className={cn("size-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")}
+          />
+        </button>
+      </div>
 
       {isExpanded && (
         <div className="mx-3 mb-3 rounded-lg bg-secondary/60 p-3 text-xs">
