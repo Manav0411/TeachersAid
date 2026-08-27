@@ -110,8 +110,19 @@ export async function runMappingEngine(
   for (const q of questions) {
     const c = canonicalizeLabel(q.displayNumber);
     if (!c) continue;
-    const matches = byCanonicalLabel.get(labelKey(c));
-    if (!matches || matches.length === 0) continue;
+    const rawMatches = byCanonicalLabel.get(labelKey(c));
+    if (!rawMatches || rawMatches.length === 0) continue;
+
+    // Two distinct questions can canonicalise to the identical (major, sub)
+    // key — most commonly when a sub-part's own parent number failed to
+    // extract, leaving it with only a bare marker ("(a)", "(i)") that
+    // collides with every other question missing its own parent number the
+    // same way. Without this filter, every one of those questions would
+    // independently re-claim the same segment(s) below (live-observed: one
+    // segment ended up in 5 separate mappings). First match in question
+    // order wins; a later colliding question simply finds nothing left.
+    const matches = rawMatches.filter((s) => !claimedSegmentIds.has(s.id));
+    if (matches.length === 0) continue;
 
     // Multiple segments sharing one label are only safe to concatenate
     // when at least one is struck through — the genuine "answered twice"
@@ -150,38 +161,58 @@ export async function runMappingEngine(
 
     const split = splitByInternalLabels(seg.transcript);
     if (split) {
-      let matchedAny = false;
-      for (const chunk of split) {
+      const chunkMatches = split.map((chunk) => {
         const chunkCanonical = canonicalizeLabel(`${c.major}${chunk.label}`);
         const child = children.find(
           (q) => canonicalizeLabel(q.displayNumber)?.sub === chunkCanonical?.sub
         );
-        if (!child) continue;
-        const derived: AnswerSegment = {
-          ...seg,
-          id: `${seg.id}-split-${chunk.label}`,
-          transcript: chunk.text,
-          detectedLabel: `${c.major}${chunk.label}`,
-        };
-        derivedSegments.push(derived);
-        claim({
-          questionId: child.id,
-          segmentIds: [derived.id],
-          status: "answered",
-          method: "label",
-          confidence: 0.75,
-          rationale: "Split from a parent-labelled segment by internal sub-labels",
-        });
-        matchedAny = true;
-      }
-      if (matchedAny) {
+        return { chunk, child };
+      });
+
+      // Only trust the split when every chunk resolves to a distinct
+      // child. canonicalizeLabel deliberately unifies roman numerals and
+      // letters onto one scale (a student's "11-i" should still match
+      // "11(a)") — but that same unification means a numbered bullet list
+      // *inside* one answer ("(i) ... (ii) ... (iii) ...") can coincidentally
+      // land on the same canonical sub as an unrelated lettered sibling
+      // (e.g. an OR-choice's "(a)" part). A partial match is exactly that
+      // coincidence, not a genuine per-sub-part split — trusting it would
+      // both mis-claim a question a second time and silently drop every
+      // unmatched chunk's content. Require the split to fully and
+      // distinctly account for itself, or leave the segment whole for the
+      // semantic/positional steps below.
+      const matchedChildIds = new Set(
+        chunkMatches.filter((m) => m.child).map((m) => m.child!.id)
+      );
+      const isCompleteSplit =
+        chunkMatches.every((m) => m.child) && matchedChildIds.size === split.length;
+
+      if (isCompleteSplit) {
+        for (const { chunk, child } of chunkMatches) {
+          const derived: AnswerSegment = {
+            ...seg,
+            id: `${seg.id}-split-${chunk.label}`,
+            transcript: chunk.text,
+            detectedLabel: `${c.major}${chunk.label}`,
+          };
+          derivedSegments.push(derived);
+          claim({
+            questionId: child!.id,
+            segmentIds: [derived.id],
+            status: "answered",
+            method: "label",
+            confidence: 0.75,
+            rationale: "Split from a parent-labelled segment by internal sub-labels",
+          });
+        }
         claimedSegmentIds.add(seg.id); // superseded by its splits
         continue;
       }
     }
-    // No internal markers found — fall through to the semantic residue,
-    // which will pick whichever child fits best, without a dedicated LLM
-    // call per parent-only segment.
+    // No internal markers found, or the split didn't cleanly account for
+    // every chunk — fall through to the semantic residue, which will pick
+    // whichever child fits best, without a dedicated LLM call per
+    // parent-only segment.
   }
 
   // --- Step D: semantic match for the residue ---------------------------

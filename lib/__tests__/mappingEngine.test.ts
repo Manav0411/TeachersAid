@@ -144,3 +144,89 @@ describe("runMappingEngine — multiple segments sharing one label", () => {
     expect(strayMapping?.questionId).not.toBe("q1");
   });
 });
+
+describe("runMappingEngine — step B cross-question label collisions", () => {
+  it("claims a segment for at most one of several questions sharing an identical bare canonical label (regression)", async () => {
+    // Live-observed on a real paper: several distinct sub-part questions
+    // each lost their parent number during extraction, leaving displayNumber
+    // as just a bare marker ("(a)", "(i)", "(ii)"...). Every one of those
+    // canonicalises to the same (major: null, sub: X) key, so a single
+    // bare-labelled answer segment matched ALL of them in step B — one
+    // segment ended up in 5 separate mappings on the real run. First match
+    // in question order must win; later colliding questions get nothing.
+    const questions = [
+      { ...question("qa1", [1]), displayNumber: "(a)" },
+      { ...question("qa2", [2]), displayNumber: "(a)" },
+    ];
+    const segments = [segment({ id: "seg-a", detectedLabel: "(a)", transcript: "Some answer" })];
+
+    const { mappings } = await runMappingEngine(questions, segments);
+
+    const segmentOccurrences = mappings.filter((m) => m.segmentIds.includes("seg-a"));
+    expect(segmentOccurrences).toHaveLength(1);
+    expect(segmentOccurrences[0]?.questionId).toBe("qa1");
+
+    const qa2Mapping = mappings.find((m) => m.questionId === "qa2");
+    expect(qa2Mapping?.status).not.toBe("answered");
+  });
+});
+
+describe("runMappingEngine — step C parent-label split", () => {
+  it("splits a parent-only segment into its lettered children when every internal marker matches (regression)", async () => {
+    const questions = [
+      { ...question("q11a", [11, 1]), displayNumber: "11(a)" },
+      { ...question("q11b", [11, 2]), displayNumber: "11(b)" },
+    ];
+    const segments = [
+      segment({
+        id: "seg-11",
+        detectedLabel: "11",
+        transcript: "(a) First answer\n(b) Second answer",
+      }),
+    ];
+
+    const { mappings, derivedSegments } = await runMappingEngine(questions, segments);
+
+    expect(derivedSegments).toHaveLength(2);
+    const ma = mappings.find((m) => m.questionId === "q11a");
+    const mb = mappings.find((m) => m.questionId === "q11b");
+    expect(ma?.status).toBe("answered");
+    expect(mb?.status).toBe("answered");
+  });
+
+  it("does not split — and does not duplicate-claim — when only one internal marker coincidentally matches a lettered sibling (regression)", async () => {
+    // Live-observed: a parent-only segment ("25") held one full answer to
+    // the sole lettered child ("25(a)", an OR-choice part) but the student
+    // broke that single answer into their own numbered list, "(i) ... (ii)
+    // ... (iii) ...". canonicalizeLabel unifies roman "i" and letter "a"
+    // onto the same canonical sub, so chunk (i) alone false-matched
+    // "25(a)" while chunks (ii)/(iii) matched nothing and were silently
+    // dropped — and if "25(a)" was *also* claimed elsewhere (e.g. an exact
+    // label match on another page), this produced the observed duplicate
+    // mapping. A split must be all-or-nothing: since (ii)/(iii) can't
+    // resolve, the whole segment must stay whole instead of partially
+    // matching.
+    const questions = [{ ...question("q25a", [25, 1]), displayNumber: "25(a)" }];
+    const segments = [
+      segment({
+        id: "seg-25",
+        detectedLabel: "25",
+        transcript: "(i) First point\n(ii) Second point\n(iii) Third point",
+      }),
+    ];
+
+    const { mappings, derivedSegments } = await runMappingEngine(questions, segments);
+
+    // No partial split: the segment was not sliced into derived chunks.
+    expect(derivedSegments).toHaveLength(0);
+
+    // q25a is claimed at most once (the invariant the bug violated), and
+    // no content was silently dropped — seg-25 survives whole and ends up
+    // matched (positionally, since it's the sole remaining segment/question
+    // pair) rather than fragmented.
+    const questionMappings = mappings.filter((m) => m.questionId === "q25a");
+    expect(questionMappings).toHaveLength(1);
+    const segMapping = mappings.find((m) => m.segmentIds.includes("seg-25"));
+    expect(segMapping?.questionId).toBe("q25a");
+  });
+});
