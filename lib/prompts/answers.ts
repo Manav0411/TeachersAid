@@ -26,8 +26,13 @@ answers one question. Return ONLY JSON:
 
 Rules:
 1. Order segments in reading order: top to bottom, left column fully before right column.
-2. A new segment starts at an explicit question label, a clear vertical gap, or a
-   horizontal rule drawn by the student.
+2. A new segment starts at an explicit question label, a clear vertical gap, a
+   horizontal rule drawn by the student, OR a topic change — a paragraph that answers
+   a clearly different question from the one before it is a NEW segment even without
+   a label or a large gap. Never fold an unlabelled paragraph into the preceding
+   labelled one just because they sit close together; judge by content, not just
+   spacing. When in doubt, prefer more segments with detected_label: null over merging
+   unrelated content into one.
 3. line_boxes must tightly bound only the ink of this segment. Do NOT return one giant
    box spanning the whole page. Do NOT include the ruled margin line or page number.
 4. If the student answered the same question twice, emit both segments and mark the

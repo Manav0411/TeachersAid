@@ -211,7 +211,8 @@ async function buildChaosAnswerSheet() {
   page.drawText("Student: Ayesha Khan", { x: left, y, size: 12, font: bold });
   y -= 30;
 
-  function answer(label, text) {
+  function answer(label, text, gapBefore = 0) {
+    y -= gapBefore;
     if (label) {
       page.drawText(label, { x: left, y, size: 11, font: bold });
       y -= 16;
@@ -228,8 +229,13 @@ async function buildChaosAnswerSheet() {
   answer("4.", "Water is used as a raw material in photosynthesis, providing hydrogen ions for the light reactions.");
   answer("1.", "H2O");
   // Unlabeled — clearly the answer to Q2, but the student wrote no number.
-  answer(null, "Transpiration is the process by which plants lose water vapour through stomata in their leaves.");
-  answer("3.", "100 degrees Celsius");
+  // A large gap makes this unambiguously a new block, not a continuation.
+  answer(
+    null,
+    "Transpiration is the process by which plants lose water vapour through stomata in their leaves.",
+    30
+  );
+  answer("3.", "100 degrees Celsius", 30);
   // Mislabeled with a number that doesn't exist on the paper (7) — content
   // actually answers Q5.
   answer(
