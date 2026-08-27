@@ -116,4 +116,81 @@ describe("reconcileQuestions", () => {
     ]);
     expect(result[0].id).toBe("section-a-1");
   });
+
+  it("combines a bare sub-part marker with its parent_number (regression)", () => {
+    // Live-observed: a nested sub-part printed with only its own marker
+    // ("(i)") relies on parent_number ("24(b)") to carry the full
+    // identity. Before this fix, parent_number was captured but never
+    // consumed — displayNumber stayed bare "(i)", losing the major
+    // number entirely and colliding with any other question's own bare
+    // "(i)"/"(a)" marker.
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: [
+          q({ display_number: "(i)", parent_number: "24(b)", text: "nested part" }),
+        ],
+      },
+    ]);
+    expect(result[0].displayNumber).toBe("24(b) (i)");
+    expect(result[0].sortKey).toEqual([24, 2, 1]);
+  });
+
+  it("does not double-prefix when display_number already includes the parent (regression)", () => {
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: [q({ display_number: "24(b)(i)", parent_number: "24(b)" })],
+      },
+    ]);
+    expect(result[0].displayNumber).toBe("24(b)(i)");
+  });
+
+  it("leaves a flat paper (no parent_number anywhere) unaffected", () => {
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: [q({ display_number: "1" }), q({ display_number: "2" })],
+      },
+    ]);
+    expect(result.map((r) => r.displayNumber)).toEqual(["1", "2"]);
+  });
+
+  it("backfills a bare sub-part's missing parent_number from its preceding sibling (regression)", () => {
+    // Live-observed on the real paper: "(a)" and "(b)" both correctly
+    // carried parent_number "32(orig. Q39)", but a trailing "(c)" — on
+    // a page boundary — came back from the model with parent_number:
+    // null, leaving it bare and colliding with any other question's own
+    // bare "(c)".
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: [
+          q({ display_number: "(a)", parent_number: "32", text: "part a" }),
+          q({ display_number: "(b)", parent_number: "32", text: "part b" }),
+          q({ display_number: "(c)", parent_number: null, text: "part c" }),
+        ],
+      },
+    ]);
+    expect(result.map((r) => r.displayNumber)).toEqual(["32 (a)", "32 (b)", "32 (c)"]);
+    expect(result[2].parentNumber).toBe("32");
+  });
+
+  it("does not leak an inherited parent onto the next genuinely new top-level question", () => {
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: [
+          q({ display_number: "(a)", parent_number: "32", text: "part a" }),
+          q({ display_number: "33", parent_number: null, text: "an unrelated question" }),
+        ],
+      },
+    ]);
+    expect(result.map((r) => r.displayNumber)).toEqual(["32 (a)", "33"]);
+  });
 });

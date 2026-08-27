@@ -2,6 +2,7 @@ import type { Question } from "@/lib/types";
 import type { RawQuestion } from "@/lib/schemas";
 import { toBBox } from "@/lib/boxes";
 import { subPartIndex } from "@/lib/roman";
+import { canonicalizeLabel } from "@/lib/mapping/labels";
 
 const PREFIX_WORDS = new Set(["q", "qn", "ques", "question"]);
 
@@ -49,16 +50,37 @@ type WorkingQuestion = Question & {
   continuesFromPreviousPage: boolean;
 };
 
+/**
+ * A sub-part's own printed marker ("(i)", "(a)") can be bare, relying on
+ * a parent number the model captured separately in `parent_number`
+ * ("24", or "24(b)" for a further-nested OR-choice part). Combining them
+ * here — once, before id/sortKey/canonicalisation all derive from
+ * displayNumber — is what lets a bare "(i)" resolve to its actual full
+ * identity instead of silently losing the parent context. Guards against
+ * double-prefixing when the model already repeated the parent inline.
+ */
+function withParentNumber(displayNumber: string, parentNumber: string | null): string {
+  if (!parentNumber) return displayNumber;
+  const trimmedParent = parentNumber.trim();
+  const trimmedDisplay = displayNumber.trim();
+  if (!trimmedParent) return trimmedDisplay;
+  if (trimmedDisplay.toLowerCase().startsWith(trimmedParent.toLowerCase())) {
+    return trimmedDisplay;
+  }
+  return `${trimmedParent} ${trimmedDisplay}`;
+}
+
 function normaliseOne(
   raw: RawQuestion,
   pageIndex: number,
   section: string | null,
   orderInPage: number
 ): WorkingQuestion {
+  const displayNumber = withParentNumber(raw.display_number, raw.parent_number);
   return {
     id: "", // assigned after dedupe, once we know the final display_number
-    displayNumber: raw.display_number,
-    sortKey: parseSortKey(raw.display_number, [pageIndex * 1000 + orderInPage]),
+    displayNumber,
+    sortKey: parseSortKey(displayNumber, [pageIndex * 1000 + orderInPage]),
     parentNumber: raw.parent_number ?? undefined,
     text: raw.text,
     options: raw.options?.map((o) => ({ label: o.label, text: o.text })) ?? undefined,
@@ -89,6 +111,32 @@ export function reconcileQuestions(pages: PageQuestions[]): Question[] {
   const flat: WorkingQuestion[] = sortedPages.flatMap((page) =>
     page.questions.map((raw, i) => normaliseOne(raw, page.pageIndex, page.section, i))
   );
+
+  // Backfill a bare sub-part's missing parent number from its immediately
+  // preceding sibling, in printed order. Live-observed: the model
+  // extracts each page independently, so a sub-part landing right at a
+  // page boundary sometimes loses the parent_number its siblings on the
+  // same page carried (e.g. "(a)"/"(b)" both get "24(b)", but a trailing
+  // "(c)" on the next page comes back with parent_number: null). Only
+  // fires for a genuinely bare marker (no major number of its own);
+  // resets once a question with its own major number appears, so it
+  // never leaks across into an unrelated question.
+  let inheritedParent: string | undefined;
+  for (const q of flat) {
+    if (!q.parentNumber) {
+      const canon = canonicalizeLabel(q.displayNumber);
+      if (canon?.major === null && inheritedParent) {
+        q.parentNumber = inheritedParent;
+        q.displayNumber = withParentNumber(q.displayNumber, inheritedParent);
+        q.sortKey = parseSortKey(q.displayNumber, q.sortKey);
+      }
+    }
+    if (q.parentNumber) {
+      inheritedParent = q.parentNumber;
+    } else if (canonicalizeLabel(q.displayNumber)?.major !== null) {
+      inheritedParent = undefined;
+    }
+  }
 
   // Stitch: merge a question that continues onto the next page into the
   // first question on that next page, when the numbers agree (or the

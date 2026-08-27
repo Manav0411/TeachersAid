@@ -41,4 +41,18 @@ describe("canonicalizeLabel", () => {
     expect(isParentOnlyLabel("Q.11")).toBe(true);
     expect(isParentOnlyLabel("11(a)")).toBe(false);
   });
+
+  it("disambiguates nested sub-parts that share a trailing marker (regression)", () => {
+    // Live-observed root cause: an OR-choice question ("24(a)..." /
+    // "24(b)...") each further broken into roman sub-points ("(i)",
+    // "(ii)") used to collapse onto the SAME canonical key, since only
+    // the trailing token survived — "24(a)(i)" and "24(b)(i)" both
+    // canonicalised to { major: 24, sub: "a" }. Every recognised
+    // sub-token must now contribute, so nesting is preserved.
+    expect(canonicalizeLabel("24(a)(i)")).toEqual({ major: 24, sub: "a-a" });
+    expect(canonicalizeLabel("24(b)(i)")).toEqual({ major: 24, sub: "b-a" });
+    expect(canonicalizeLabel("24(a)(i)")).not.toEqual(canonicalizeLabel("24(b)(i)"));
+    // Single-level labels are unaffected by the multi-token change.
+    expect(canonicalizeLabel("24(a)")).toEqual({ major: 24, sub: "a" });
+  });
 });

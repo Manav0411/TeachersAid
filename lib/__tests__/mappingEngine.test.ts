@@ -230,3 +230,31 @@ describe("runMappingEngine — step C parent-label split", () => {
     expect(segMapping?.questionId).toBe("q25a");
   });
 });
+
+describe("runMappingEngine — nested OR-choice sub-parts (labels.ts fix)", () => {
+  it("matches each sibling's own nested roman sub-part instead of colliding on the trailing marker", async () => {
+    // Two OR-choice questions ("24(a)" and "24(b)"), each further broken
+    // into roman sub-points — before canonicalizeLabel accumulated every
+    // sub-token, "24(a)(i)" and "24(b)(i)" both collapsed to
+    // { major: 24, sub: "a" } (only the trailing "i" survived).
+    const questions = [
+      { ...question("q24a-i", [24, 1, 1]), displayNumber: "24(a)(i)" },
+      { ...question("q24b-i", [24, 2, 1]), displayNumber: "24(b)(i)" },
+    ];
+    const segments = [
+      segment({ id: "seg-a-i", detectedLabel: "24(a)(i)", transcript: "Answer for a(i)" }),
+      segment({ id: "seg-b-i", detectedLabel: "24(b)(i)", transcript: "Answer for b(i)" }),
+    ];
+
+    const { mappings } = await runMappingEngine(questions, segments);
+
+    const mA = mappings.find((m) => m.questionId === "q24a-i");
+    const mB = mappings.find((m) => m.questionId === "q24b-i");
+    expect(mA?.status).toBe("answered");
+    expect(mA?.method).toBe("label");
+    expect(mA?.segmentIds).toEqual(["seg-a-i"]);
+    expect(mB?.status).toBe("answered");
+    expect(mB?.method).toBe("label");
+    expect(mB?.segmentIds).toEqual(["seg-b-i"]);
+  });
+});
