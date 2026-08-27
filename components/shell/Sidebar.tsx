@@ -55,10 +55,22 @@ export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
 
         <div
           className={cn(
-            "flex items-center gap-2 rounded-pill border-2 bg-ink px-4 py-2 text-white",
+            "flex items-center gap-2 rounded-pill border-2 border-transparent px-4 py-2 text-white",
             collapsed && "w-11 justify-center px-0 py-2.5"
           )}
-          style={{ borderImage: "linear-gradient(90deg,#ff7950,#c0350a) 1" }}
+          style={{
+            // border-image (the previous approach here) doesn't respect
+            // border-radius, so this pill rendered as flat black with no
+            // visible gradient ring at all. The two-layer background-clip
+            // technique below does follow the radius: one layer painted
+            // to the padding box (the ink fill), one to the border box
+            // (the gradient), with a transparent border as the gap
+            // between them.
+            backgroundImage:
+              "linear-gradient(var(--color-ink), var(--color-ink)), linear-gradient(90deg,#ff7950,#c0350a)",
+            backgroundOrigin: "border-box",
+            backgroundClip: "padding-box, border-box",
+          }}
         >
           <Sparkles className="size-4 shrink-0 text-brand-from" />
           {!collapsed && (
