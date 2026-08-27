@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerSheetPanel";
 import { QuestionRow } from "./QuestionRow";
@@ -22,10 +22,12 @@ export function ReviewScreen({
   session,
   onReassign,
   onOpenSummary,
+  onNewUpload,
 }: {
   session: Session;
   onReassign: (segmentId: string, questionId: string | null) => void;
   onOpenSummary: () => void;
+  onNewUpload: () => void;
 }) {
   const { questions, segments, mappings, grades } = session;
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(questions[0]?.id ?? null);
@@ -125,6 +127,13 @@ export function ReviewScreen({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onNewUpload}
+              className="flex items-center gap-1.5 rounded-pill border border-line px-4 py-1.5 text-xs font-medium hover:bg-secondary/50"
+            >
+              <Plus className="size-3.5" /> New exam
+            </button>
             {hasGrades && (
               <button
                 type="button"

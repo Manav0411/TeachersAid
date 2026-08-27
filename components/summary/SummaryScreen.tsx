@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Plus, TriangleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import type { Session } from "@/lib/types";
 
@@ -12,7 +12,15 @@ const VERDICT_COLORS: Record<string, string> = {
   ungradable: "bg-muted-foreground",
 };
 
-export function SummaryScreen({ session, onBack }: { session: Session; onBack: () => void }) {
+export function SummaryScreen({
+  session,
+  onBack,
+  onNewUpload,
+}: {
+  session: Session;
+  onBack: () => void;
+  onNewUpload: () => void;
+}) {
   const { summary, questions, grades } = session;
   if (!summary) return null;
 
@@ -25,13 +33,22 @@ export function SummaryScreen({ session, onBack }: { session: Session; onBack: (
   return (
     <AppShell collapsed>
       <div className="bg-page-working min-h-full px-6 py-8">
-        <button
-          type="button"
-          onClick={onBack}
-          className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Back to review
-        </button>
+        <div className="mb-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Back to review
+          </button>
+          <button
+            type="button"
+            onClick={onNewUpload}
+            className="flex items-center gap-1.5 rounded-pill border border-line px-4 py-1.5 text-xs font-medium hover:bg-secondary/50"
+          >
+            <Plus className="size-3.5" /> New exam
+          </button>
+        </div>
 
         <div className="mx-auto max-w-3xl space-y-4">
           <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">

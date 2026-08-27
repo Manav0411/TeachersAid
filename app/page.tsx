@@ -79,10 +79,20 @@ function Flow() {
     );
   }
 
+  function handleNewUpload() {
+    setView("review");
+    dispatch({ type: "RESET" });
+  }
+
   return view === "summary" ? (
-    <SummaryScreen session={session} onBack={() => setView("review")} />
+    <SummaryScreen session={session} onBack={() => setView("review")} onNewUpload={handleNewUpload} />
   ) : (
-    <ReviewScreen session={session} onReassign={handleReassign} onOpenSummary={() => setView("summary")} />
+    <ReviewScreen
+      session={session}
+      onReassign={handleReassign}
+      onOpenSummary={() => setView("summary")}
+      onNewUpload={handleNewUpload}
+    />
   );
 }
 
