@@ -47,13 +47,22 @@ export class Semaphore {
 /** Shared pool for all page-level Gemini calls (extract-questions, extract-answers). */
 export const pagePool = new Semaphore(3);
 
-export type RetryableError = Error & { status?: number; retryable?: boolean };
+export type RetryableError = Error & {
+  status?: number;
+  retryable?: boolean;
+  // The `ai` SDK's APICallError (thrown by lib/ai/groq.ts) shapes errors
+  // differently from @google/genai: `statusCode` instead of `status`, and
+  // its own `isRetryable` the SDK already computed from the response.
+  statusCode?: number;
+  isRetryable?: boolean;
+};
 
 function isRetryable(err: unknown): boolean {
   const e = err as RetryableError;
-  if (e?.retryable === true) return true;
-  if (typeof e?.status === "number") {
-    return e.status === 429 || e.status >= 500;
+  if (e?.retryable === true || e?.isRetryable === true) return true;
+  const status = e?.status ?? e?.statusCode;
+  if (typeof status === "number") {
+    return status === 429 || status >= 500;
   }
   return false;
 }

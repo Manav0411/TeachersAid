@@ -12,8 +12,10 @@
     "gen:samples": "node scripts/gen-samples.mjs"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^4.0.31",
     "@base-ui/react": "^1.7.0",
     "@google/genai": "^2.19.0",
+    "ai": "^7.0.79",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "heic2any": "^0.0.4",

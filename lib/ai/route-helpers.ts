@@ -7,7 +7,10 @@ export function toApiError(err: unknown): ApiError {
   if (err instanceof ModelJsonError) {
     return { code: "invalid_model_output", message: err.message, retryable: true };
   }
-  const status = (err as { status?: number })?.status;
+  // @google/genai errors carry `status`; the `ai` SDK's APICallError
+  // (lib/ai/groq.ts) carries `statusCode` instead.
+  const e = err as { status?: number; statusCode?: number };
+  const status = e?.status ?? e?.statusCode;
   if (status === 429) {
     return { code: "rate_limited", message: "Rate limited by the model", retryable: true };
   }

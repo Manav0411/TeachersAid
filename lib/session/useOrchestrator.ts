@@ -25,11 +25,9 @@ import {
   computeSummary,
 } from "@/lib/grading/normalise";
 
-// Grading is temporarily disabled while the extraction/mapping/highlighting
-// pillars are being hardened — flip back on when grading work resumes.
-// Skipping it also avoids the two priciest-per-run Gemini call groups
-// during this iteration.
-const RUN_GRADING = false;
+// Grading/summary run on Groq's free tier (lib/ai/groq.ts) — text-only,
+// so they don't touch Gemini's quota, which extraction still relies on.
+const RUN_GRADING = true;
 
 // Processing screen weights for the determinate progress bar. Mapping picks
 // up grading's share when grading is skipped, so the bar still reaches 100%.

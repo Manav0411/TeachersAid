@@ -137,12 +137,17 @@ export const GradeItemInput = z.object({
 });
 export type GradeItemInput = z.infer<typeof GradeItemInput>;
 
+// No .default([]) here: this schema also doubles as the structured-output
+// schema for the grading model call (lib/ai/groq.ts), and Groq/OpenAI's
+// strict JSON-schema mode rejects any property with a default that's
+// therefore missing from `required` — the model must always supply
+// missed_points itself (an empty array is a valid answer).
 export const RawGrade = z.object({
   question_id: z.string(),
   awarded: z.number(),
   verdict: VerdictSchema,
   feedback: z.string(),
-  missed_points: z.array(z.string()).default([]),
+  missed_points: z.array(z.string()),
   confidence: z.number().min(0).max(1),
 });
 export type RawGrade = z.infer<typeof RawGrade>;

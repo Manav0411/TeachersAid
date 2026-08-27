@@ -1,4 +1,4 @@
-import { geminiProvider } from "@/lib/ai/gemini";
+import { generateGraded } from "@/lib/ai/groq";
 import { withRetry } from "@/lib/pool";
 import { buildGradingPrompt } from "@/lib/prompts/grading";
 import { GradeModelResponse, GradeRequest } from "@/lib/schemas";
@@ -26,10 +26,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    const raw = await withRetry(() =>
-      geminiProvider.generateJson({ prompt: buildGradingPrompt(parsedReq.data.items) })
+    const data = await withRetry(() =>
+      generateGraded(buildGradingPrompt(parsedReq.data.items), GradeModelResponse)
     );
-    const data = GradeModelResponse.parse(raw);
     return okResponse(data);
   } catch (err) {
     return errorResponse(toApiError(err));

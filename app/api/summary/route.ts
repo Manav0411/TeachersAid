@@ -1,4 +1,4 @@
-import { geminiProvider } from "@/lib/ai/gemini";
+import { generateGraded } from "@/lib/ai/groq";
 import { withRetry } from "@/lib/pool";
 import { buildSummaryPrompt } from "@/lib/prompts/grading";
 import { SummaryModelResponse, SummaryRequest } from "@/lib/schemas";
@@ -21,20 +21,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const raw = await withRetry(() =>
-      geminiProvider.generateJson({
-        prompt: buildSummaryPrompt({
-          grades: parsedReq.data.grades.map((g) => ({
-            display_number: g.display_number,
-            awarded: g.awarded,
-            verdict: g.verdict,
-            feedback: g.feedback,
-          })),
-          counts: parsedReq.data.counts,
-        }),
-      })
-    );
-    const data = SummaryModelResponse.parse(raw);
+    const prompt = buildSummaryPrompt({
+      grades: parsedReq.data.grades.map((g) => ({
+        display_number: g.display_number,
+        awarded: g.awarded,
+        verdict: g.verdict,
+        feedback: g.feedback,
+      })),
+      counts: parsedReq.data.counts,
+    });
+    const data = await withRetry(() => generateGraded(prompt, SummaryModelResponse));
     return okResponse(data);
   } catch (err) {
     return errorResponse(toApiError(err));
