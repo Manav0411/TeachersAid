@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerSheetPanel";
-import { QuestionRow, scoreChipClass } from "./QuestionRow";
+import { QuestionRow } from "./QuestionRow";
 import type { Session } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -259,7 +259,11 @@ export function ReviewScreen({
 
         {selectedQuestion && selectedMapping && (
           <div className="sr-only" aria-live="polite">
-            {selectedQuestion.displayNumber} score {scoreChipClass(gradeByQuestion.get(selectedQuestion.id))}
+            Question {selectedQuestion.displayNumber} selected
+            {(() => {
+              const grade = gradeByQuestion.get(selectedQuestion.id);
+              return grade ? `, score ${grade.awarded} of ${grade.max}` : "";
+            })()}
           </div>
         )}
       </div>

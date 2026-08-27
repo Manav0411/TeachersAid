@@ -19,6 +19,16 @@ const STEPS: Step[] = [
 const STAGE_ORDER: SessionStage[] = ["idle", "questions", "answers", "mapping", "grading", "done"];
 
 function stepState(stepKey: SessionStage, currentStage: SessionStage): "pending" | "active" | "done" {
+  // The orchestrator (lib/session/useOrchestrator.ts) reads question and
+  // answer pages concurrently, under one shared "questions" stage — it
+  // only flips to "answers" once *both* are already finished. Reflect
+  // that here: both steps are genuinely active for the whole time
+  // currentStage is "questions", not just the first of the two. Without
+  // this, the UI showed "Reading question paper" spinning while the
+  // progress line beside it already read "Reading answer sheet (9/10)".
+  if (currentStage === "questions" && (stepKey === "questions" || stepKey === "answers")) {
+    return "active";
+  }
   const stepIdx = STAGE_ORDER.indexOf(stepKey);
   const currentIdx = STAGE_ORDER.indexOf(currentStage);
   if (currentIdx > stepIdx) return "done";
@@ -75,7 +85,7 @@ export function ProcessingScreen({
                     {state === "pending" && <span className="size-1.5 rounded-full bg-line" />}
                   </span>
                   <span className={cn(state === "pending" && "text-muted-foreground")}>{step.label}</span>
-                  {state === "active" && progress.label && (
+                  {state === "active" && progress.label.startsWith(step.label) && (
                     <span className="ml-auto text-xs text-muted-foreground">{progress.label}</span>
                   )}
                 </li>

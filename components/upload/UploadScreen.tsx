@@ -23,9 +23,11 @@ const EMPTY_SLOT: SlotState = { info: null, loading: false, error: null };
 export function UploadScreen({
   onStart,
   onTrySample,
+  loadingSample = false,
 }: {
   onStart: (questionPages: DropzoneFileInfo, answerPages: DropzoneFileInfo) => void;
   onTrySample: () => void;
+  loadingSample?: boolean;
 }) {
   const [questionSlot, setQuestionSlot] = useState<SlotState>(EMPTY_SLOT);
   const [answerSlot, setAnswerSlot] = useState<SlotState>(EMPTY_SLOT);
@@ -116,17 +118,20 @@ export function UploadScreen({
         >
           Start Mapping →
         </button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Once both files are uploaded, you&apos;ll be able to map answers with
-          questions
-        </p>
+        {!canStart && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Once both files are uploaded, you&apos;ll be able to map answers with
+            questions
+          </p>
+        )}
 
         <button
           type="button"
           onClick={onTrySample}
-          className="mt-6 text-sm font-medium text-brand-to underline underline-offset-4"
+          disabled={loadingSample}
+          className="mt-6 text-sm font-medium text-brand-to underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Try a sample instead
+          {loadingSample ? "Loading sample…" : "Try a sample instead"}
         </button>
       </div>
     </AppShell>

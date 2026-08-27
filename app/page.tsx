@@ -39,7 +39,8 @@ function Flow() {
     return (
       <UploadScreen
         onStart={handleStart}
-        onTrySample={loadingSample ? () => {} : handleTrySample}
+        onTrySample={handleTrySample}
+        loadingSample={loadingSample}
       />
     );
   }

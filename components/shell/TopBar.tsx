@@ -1,8 +1,8 @@
 import { Bell, ChevronDown, HelpCircle, Sparkles } from "lucide-react";
 
 /**
- * The app shell's top bar — breadcrumb, help, notifications, and the signed
- * -in teacher, echoing the Figma's chrome (plan §Design). Static; only the
+ * The app shell's top bar — breadcrumb, help, notifications, and the
+ * signed-in teacher, echoing the wider product's chrome. Static; only the
  * Exams flow beneath it is functional.
  */
 export function TopBar({ crumb = "Exams" }: { crumb?: string }) {

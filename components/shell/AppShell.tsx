@@ -5,8 +5,7 @@ import { TopBar } from "./TopBar";
 /**
  * Composes the sidebar + top bar around a screen's content. `collapsed`
  * switches the sidebar to its icon rail — used on the processing and
- * review screens per plan §Design ("collapses to an icon rail on working
- * screens").
+ * review screens, which need the extra width more than the full nav.
  */
 export function AppShell({
   children,
