@@ -1,9 +1,9 @@
 import { isRomanNumeral, letterToIndex, romanToInt } from "@/lib/roman";
 
 /**
- * Label canonicalisation (PRD §6.4 step A). Strips question/answer prefix
- * words and punctuation, then unifies roman numerals and letters onto one
- * scale so "11(a)", "Ans 11 A", and "11-i" all compare equal.
+ * Label canonicalisation. Strips question/answer prefix words and
+ * punctuation, then unifies roman numerals and letters onto one scale so
+ * "11(a)", "Ans 11 A", and "11-i" all compare equal.
  *
  *   canonicalizeLabel("Q.11(a)")  -> { major: 11, sub: "a" }
  *   canonicalizeLabel("Ans 11 A") -> { major: 11, sub: "a" }
@@ -83,7 +83,7 @@ export function labelsMatch(a: string | null, b: string | null): boolean {
 }
 
 /** True when `label` names only the parent question (e.g. "11") while the
- * paper has lettered sub-parts ("11(a)", "11(b)") — PRD §6.4 step C. */
+ * paper has lettered sub-parts ("11(a)", "11(b)"). */
 export function isParentOnlyLabel(label: string | null): boolean {
   const c = canonicalizeLabel(label);
   return c !== null && c.major !== null && c.sub === null;

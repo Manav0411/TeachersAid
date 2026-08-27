@@ -21,7 +21,7 @@ type MapApiResponse =
     }
   | { ok: false; error: { code: string; message: string; retryable: boolean } };
 
-/** PRD §6.4 step D — one LLM call matching the still-unmatched residue. */
+/** One LLM call matching the still-unmatched residue. */
 export async function semanticMatch(
   questions: Question[],
   segments: AnswerSegment[]

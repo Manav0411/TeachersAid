@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeLabel, isParentOnlyLabel, labelsMatch } from "@/lib/mapping/labels";
 
 describe("canonicalizeLabel", () => {
-  it("parses 'Q.11(a)' (PRD §6.4 example)", () => {
+  it("parses 'Q.11(a)'", () => {
     expect(canonicalizeLabel("Q.11(a)")).toEqual({ major: 11, sub: "a" });
   });
 
-  it("parses 'Ans 11 A' (PRD §6.4 example)", () => {
+  it("parses 'Ans 11 A'", () => {
     expect(canonicalizeLabel("Ans 11 A")).toEqual({ major: 11, sub: "a" });
   });
 
-  it("parses '11-i' as roman i -> 1st -> 'a' (PRD §6.4 example)", () => {
+  it("parses '11-i' as roman i -> 1st -> 'a'", () => {
     expect(canonicalizeLabel("11-i")).toEqual({ major: 11, sub: "a" });
   });
 

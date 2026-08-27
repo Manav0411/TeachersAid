@@ -1,5 +1,5 @@
-/** Verbatim from PRD §6.4 step D — semantic match for the residue after
- * deterministic label/parent matching has run. */
+/** Semantic match prompt for the residue after deterministic label/parent
+ * matching has run. */
 export function buildMappingPrompt(input: {
   questions: { id: string; display_number: string; text: string; type: string }[];
   answers: { id: string; transcript_first_400_chars: string }[];

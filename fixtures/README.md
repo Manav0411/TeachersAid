@@ -18,8 +18,8 @@ confidence, the struck-through/clean duplicate correctly disambiguated, and
 the genuinely-unanswered question correctly graded 0/3 — though the mapping
 engine's positional-narrowing step did attach a low-confidence (65%) guess
 to it, which the UI correctly surfaces as **"Needs review"** rather than a
-silent wrong answer. That's the PRD §1.2 requirement in action ("zero silent
-wrong mappings — low-confidence must be flagged"), not a bug.
+silent wrong answer — zero silent wrong mappings, low-confidence flagged
+instead. Not a bug.
 
 ## Format
 
@@ -33,10 +33,10 @@ Each fixture directory holds:
 
 ## Honest scope note
 
-The PRD's ideal is a `pnpm test:fixtures` script that runs the pipeline
+The ideal here is a `pnpm test:fixtures` script that runs the pipeline
 programmatically against every fixture and prints accuracy numbers.
-Rasterisation is deliberately **browser-only** in this app (PRD §3: it
-avoids native-canvas/serverless build pain in production) — the trade-off is
+Rasterisation is deliberately **browser-only** in this app — it avoids
+native-canvas/serverless build pain in production — and the trade-off is
 that a pure Node CLI harness would need a second, parallel rasterisation
 path just for testing, which risks drifting from what the app actually does.
 Rather than ship an unverified script, this repo instead has:
@@ -58,11 +58,11 @@ Playwright) against the running dev server, diffing the resulting session
 state against `expected.json`. That's the natural next step this structure
 is built for.
 
-## Remaining PRD §13 fixture sets (not yet built)
+## Remaining fixture sets (not yet built)
 
-The PRD calls for five sets — clean baseline (done), sub-parts, chaos
-(out-of-order + nonexistent question), spanning (multi-page answer), and
-messy (rough work + strike-through + illegible + diagram). `clean-baseline`
-already exercises struck-through and rough-work from the "messy" set and
-sub-parts from the "sub-parts" set. The chaos and spanning sets need real
-multi-page content and are the natural next fixtures to add.
+The natural set to build out is five: clean baseline (done), sub-parts,
+chaos (out-of-order + nonexistent question), spanning (multi-page answer),
+and messy (rough work + strike-through + illegible + diagram).
+`clean-baseline` already exercises struck-through and rough-work from the
+"messy" set and sub-parts from the "sub-parts" set. The chaos and spanning
+sets need real multi-page content and are the natural next fixtures to add.

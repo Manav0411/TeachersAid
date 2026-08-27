@@ -7,7 +7,7 @@ import { errorResponse, okResponse, toApiError } from "@/lib/ai/route-helpers";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** PRD §6.5 — batches of ≤5 items, text only. */
+/** Grades in small batches (≤5 items), text only — no images needed here. */
 export async function POST(req: Request) {
   let body: unknown;
   try {

@@ -1,8 +1,8 @@
 // Generates the bundled "Try a sample" fixture PDFs under public/samples/.
 // These are synthetic, TYPED documents (not real handwriting) — they exist
 // to let a reviewer exercise the full pipeline in one click without a real
-// exam paper to hand (PRD §9). They are not a substitute for a handwriting
-// accuracy benchmark; see fixtures/README.md for that.
+// exam paper to hand. They are not a substitute for a handwriting accuracy
+// benchmark; see fixtures/README.md for that.
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { writeFile, mkdir } from "node:fs/promises";
 

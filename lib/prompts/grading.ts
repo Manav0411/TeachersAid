@@ -1,4 +1,4 @@
-/** Verbatim from PRD §6.5. */
+/** Grading prompt: derive an expected answer from the question itself, and grade fairly. */
 export function buildGradingPrompt(items: {
   question_id: string;
   display_number: string;

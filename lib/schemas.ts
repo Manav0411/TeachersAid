@@ -2,9 +2,9 @@ import { z } from "zod";
 
 /**
  * Zod schemas for (a) the raw, untrusted JSON shapes returned by the model
- * (snake_case, 0-1000 normalised boxes — see PRD §6.2-§6.5 prompts) and
- * (b) the API request/response envelopes (PRD §8). Model output must never
- * be trusted directly — always parse through these first.
+ * (snake_case, 0-1000 normalised boxes — see lib/prompts) and (b) the API
+ * request/response envelopes. Model output must never be trusted directly
+ * — always parse through these first.
  *
  * Raw (model) shapes are intentionally distinct from the domain types in
  * lib/types.ts; a normalise*() function in the relevant lib/ module bridges
@@ -28,7 +28,7 @@ export const QuestionTypeSchema = z.enum([
 ]);
 
 // ---------------------------------------------------------------------------
-// Stage 1 — question extraction (PRD §6.2)
+// Stage 1 — question extraction
 // ---------------------------------------------------------------------------
 
 export const RawQuestionOption = z.object({
@@ -59,7 +59,7 @@ export type ExtractQuestionsModelResponse = z.infer<
 >;
 
 // ---------------------------------------------------------------------------
-// Stage 2 — answer extraction (PRD §6.3)
+// Stage 2 — answer extraction
 // ---------------------------------------------------------------------------
 
 export const LegibilitySchema = z.enum(["clear", "partial", "illegible"]);
@@ -85,7 +85,7 @@ export type ExtractAnswersModelResponse = z.infer<
 >;
 
 // ---------------------------------------------------------------------------
-// Stage 3 — mapping (PRD §6.4 step D: semantic match for the residue)
+// Stage 3 — mapping (semantic match for the residue)
 // ---------------------------------------------------------------------------
 
 export const MapQuestionInput = z.object({
@@ -116,7 +116,7 @@ export const MapModelResponse = z.object({
 export type MapModelResponse = z.infer<typeof MapModelResponse>;
 
 // ---------------------------------------------------------------------------
-// Stage 4 — grading & feedback (PRD §6.5)
+// Stage 4 — grading & feedback
 // ---------------------------------------------------------------------------
 
 export const VerdictSchema = z.enum([
@@ -160,7 +160,7 @@ export const SummaryModelResponse = z.object({
 export type SummaryModelResponse = z.infer<typeof SummaryModelResponse>;
 
 // ---------------------------------------------------------------------------
-// API envelopes (PRD §8) — every route returns one of these, Zod-validated
+// API envelopes — every route returns one of these, Zod-validated
 // on both ends.
 // ---------------------------------------------------------------------------
 

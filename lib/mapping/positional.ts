@@ -13,10 +13,10 @@ export function compareSortKey(a: number[], b: number[]): number {
 export type PositionalResult = { questionId: string; confidence: number };
 
 /**
- * PRD §6.4 step E — for a still-unmatched segment sitting in reading order
- * between two confidently matched segments (questions Qi and Qj), restrict
- * candidates to questions between Qi and Qj in printed order. Boost
- * confidence by 0.1 when it's the sole candidate.
+ * For a still-unmatched segment sitting in reading order between two
+ * confidently matched segments (questions Qi and Qj), restrict candidates
+ * to questions between Qi and Qj in printed order. Boost confidence by 0.1
+ * when it's the sole candidate.
  */
 export function positionalNarrow(
   unmatchedSegmentIds: string[],

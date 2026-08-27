@@ -44,9 +44,9 @@ export type SessionAction =
     };
 
 /**
- * All session state lives in the client (PRD §3.2: "Serverless is stateless
- * ... All session state lives in the client"). This reducer is the single
- * source of truth the whole app reads and writes through.
+ * All session state lives in the client — the API routes are stateless, so
+ * this works unmodified on serverless. This reducer is the single source
+ * of truth the whole app reads and writes through.
  */
 export function sessionReducer(state: Session, action: SessionAction): Session {
   switch (action.type) {

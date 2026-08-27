@@ -1,4 +1,4 @@
-/** Verbatim from PRD §6.2. */
+/** Question extraction prompt. */
 export const QUESTIONS_PROMPT = `You are extracting questions from a scanned exam question paper page.
 
 Return ONLY a JSON object matching this schema — no markdown, no prose:

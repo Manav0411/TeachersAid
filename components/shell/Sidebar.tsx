@@ -26,9 +26,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * The app shell's left sidebar — the VedaAI product chrome from the Figma
- * (PRD §"Design language"). Only "Exams" is functional; the rest is chrome
- * establishing this as one flow inside a larger product, per plan §Design.
+ * The app shell's left sidebar — VedaAI product chrome matching the design
+ * system. Only "Exams" is functional; the rest is chrome establishing this
+ * as one flow inside a larger product.
  */
 export function Sidebar({ collapsed = false }: { collapsed?: boolean }) {
   return (

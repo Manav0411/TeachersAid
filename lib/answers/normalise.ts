@@ -4,9 +4,9 @@ import { mergeLineBoxes, sanitiseBBoxes, toBBox } from "@/lib/boxes";
 
 /**
  * Converts one page's raw model segments into domain AnswerSegments, with
- * boxes merged into ≤4 clean regions and sanity-filtered (PRD §6.3
- * post-processing #1, #2, #4). Ink-tightening (#3) is applied separately in
- * the browser once the page raster is available — see lib/boxes.client.ts.
+ * boxes merged into ≤4 clean regions and sanity-filtered. Ink-tightening
+ * is applied separately in the browser once the page raster is available
+ * — see lib/boxes.client.ts.
  */
 function normaliseOne(seg: RawAnswerSegment, pageIndex: number, i: number): AnswerSegment {
   const lineBoxes = seg.line_boxes.map(toBBox);
@@ -29,11 +29,11 @@ export type PageSegments = { pageIndex: number; raw: RawAnswerSegment[] };
 
 /**
  * Normalises every page's raw segments and applies the cross-page
- * continuation merge (PRD §6.3 post-processing #5): a segment with
- * is_continuation and no label merges into the previous page's last
- * segment; one with a label merges into the earlier segment sharing it.
- * Only the first segment on a page is considered a candidate continuation
- * — an answer resumes at the top of the next page, not mid-page.
+ * continuation merge: a segment with is_continuation and no label merges
+ * into the previous page's last segment; one with a label merges into the
+ * earlier segment sharing it. Only the first segment on a page is
+ * considered a candidate continuation — an answer resumes at the top of
+ * the next page, not mid-page.
  */
 export function buildAnswerSegments(pages: PageSegments[]): AnswerSegment[] {
   const sortedPages = [...pages].sort((a, b) => a.pageIndex - b.pageIndex);

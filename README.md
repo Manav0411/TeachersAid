@@ -6,7 +6,7 @@ transcribes the student's answers, maps answers to questions, lets the teacher
 click any question to see the exact ink highlighted on the answer sheet, grades
 each answer, and produces a summary — all within about a minute.
 
-Built for the VedaAI hiring assignment. Full spec: [`PRD-assessment-extraction.md`](./PRD-assessment-extraction.md).
+Built for the VedaAI hiring assignment.
 
 ## Setup
 
@@ -69,10 +69,10 @@ segment, both a transcript and line-level bounding boxes in one call — a
 plain OCR API doesn't give you that link. The model is called only through
 `lib/ai/provider.ts`, so swapping it is a one-file change.
 
-> **Note on the model:** the PRD names Gemini 2.5 Flash, but that model has
-> since been retired for new API keys — the API 404s and points to its
-> successor. `lib/ai/gemini.ts` uses `gemini-3.6-flash` instead, in the same
-> free-tier flash class, with a one-line comment explaining the swap.
+> **Note on the model:** Gemini 2.5 Flash has since been retired for new API
+> keys — the API 404s and points to its successor. `lib/ai/gemini.ts` uses
+> `gemini-3.6-flash` instead, in the same free-tier flash class, with a
+> one-line comment explaining the swap.
 
 **Why deterministic-then-semantic mapping.** An LLM call for every
 answer-to-question match would be slow, costly, and — worse — silently
@@ -103,8 +103,7 @@ Inter/Bricolage Grotesque type, pill shapes — which this app wears
 throughout. The Figma covers three screens; this app needed several more
 (a real processing stepper, filters, an unmatched-answers tray, manual
 override, a summary view), so those are original layouts in the same
-language rather than a pixel clone. See the plan file referenced in the
-commit history for the full breakdown of what was kept vs. designed fresh.
+language rather than a pixel clone.
 
 ## Assumptions & limitations
 
@@ -132,10 +131,9 @@ correctly disambiguated; **6/7 answered questions mapped correctly by exact
 label** (0.97 confidence each); the unanswered question was correctly
 graded 0/3 with "student did not attempt" feedback, though the mapping
 engine's positional-narrowing step attached a low-confidence (65%) guess to
-it — flagged **"Needs review"** rather than presented as fact, which is the
-behaviour the PRD asks for ("zero silent wrong mappings"). See
-`fixtures/README.md` for the full harness and how to extend it with real
-handwritten scans.
+it — flagged **"Needs review"** rather than presented as fact, which is
+exactly the point: zero silent wrong mappings. See `fixtures/README.md`
+for the full harness and how to extend it with real handwritten scans.
 
 ## Deployment
 
@@ -143,7 +141,7 @@ Deploy to Vercel with `GEMINI_API_KEY` set as a project environment
 variable — no other configuration needed; every API route is already
 `runtime = 'nodejs'` with `maxDuration = 60` and holds no server-side state.
 
-## Out of scope (per PRD §2)
+## Out of scope
 
 Authentication, persistence across reloads, multi-student batches, answer
 sheet annotation/editing, and any paid API tier.

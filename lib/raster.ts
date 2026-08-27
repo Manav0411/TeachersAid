@@ -3,9 +3,9 @@
 import type { PageAsset } from "@/lib/types";
 
 /**
- * Client-side ingest & rasterisation (PRD §6.1). Runs entirely in the
- * browser — the server never sees the original file, only the JPEG data
- * URLs produced here, one page at a time.
+ * Client-side ingest & rasterisation. Runs entirely in the browser — the
+ * server never sees the original file, only the JPEG data URLs produced
+ * here, one page at a time.
  */
 
 export const MAX_PAGES = 20;

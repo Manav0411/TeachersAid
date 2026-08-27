@@ -13,9 +13,9 @@ function transcriptFor(mapping: Mapping, segmentsById: Map<string, AnswerSegment
 }
 
 /**
- * Groups questions sharing an "Attempt any N of M" instruction (PRD §6.5,
- * edge case #14) and returns the ids of unattempted questions in a group
- * once the quota is already met — these are excluded from totalMax.
+ * Groups questions sharing an "Attempt any N of M" instruction and returns
+ * the ids of unattempted questions in a group once the quota is already
+ * met — these are excluded from totalMax.
  */
 export function optionalUnattemptedIds(
   questions: Question[],
@@ -47,7 +47,7 @@ export function optionalUnattemptedIds(
   return excluded;
 }
 
-/** Build /api/grade's ITEMS for every answered question (PRD §6.5). */
+/** Build /api/grade's ITEMS for every answered question. */
 export function buildGradeItems(
   questions: Question[],
   mappings: Mapping[],
@@ -102,7 +102,7 @@ export function fromRawGrade(raw: RawGrade, max: number): Grade {
   };
 }
 
-/** Combine grades + mapping counts into the final Summary (PRD §6.5 / §5). */
+/** Combine grades + mapping counts into the final Summary. */
 export function buildLocalSummaryCounts(mappings: Mapping[]) {
   return {
     answered: mappings.filter((m) => m.status === "answered").length,

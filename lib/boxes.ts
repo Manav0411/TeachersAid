@@ -1,7 +1,7 @@
 import type { BBox } from "@/lib/types";
 
 /**
- * Pure box math (PRD §6.3 post-processing steps 1, 2, 4). Isomorphic — no
+ * Pure box math. Isomorphic — no
  * DOM dependency — so it runs identically in API routes and in unit tests.
  * Ink-tightening (step 3) needs a canvas and lives in lib/boxes.client.ts.
  */
@@ -34,7 +34,7 @@ const VERTICAL_GAP_LINE_HEIGHT_MULTIPLIER = 1.5;
 /**
  * Merge per-line boxes (already sorted top-to-bottom) into ≤4 clean regions:
  * group consecutive lines whose vertical gap is < 1.5x the median line
- * height, then take the union of each group. PRD §6.3 post-processing #2.
+ * height, then take the union of each group.
  */
 export function mergeLineBoxes(lines: BBox[]): BBox[] {
   if (lines.length === 0) return [];
@@ -84,7 +84,7 @@ function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
-/** Clamp to [0,1] and drop degenerate or page-spanning boxes. PRD §6.3 #4. */
+/** Clamp to [0,1] and drop degenerate or page-spanning boxes. */
 export function sanitiseBBoxes(boxes: BBox[]): BBox[] {
   return boxes
     .map((b) => {
@@ -98,7 +98,7 @@ export function sanitiseBBoxes(boxes: BBox[]): BBox[] {
     .filter((b) => b.w * b.h <= MAX_PAGE_COVERAGE);
 }
 
-/** Expand a box by the PRD §7 padding: 0.5% of height top/bottom, 1% of width left/right. */
+/** Expand a box for display: 0.5% of height top/bottom, 1% of width left/right. */
 export function padBBoxForDisplay(b: BBox): BBox {
   const padX = 0.01;
   const padY = 0.005;

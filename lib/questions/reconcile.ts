@@ -8,7 +8,7 @@ const PREFIX_WORDS = new Set(["q", "qn", "ques", "question"]);
 /**
  * Parse a display_number like "11 (a)", "Q.3", "(iii)" into a sortable
  * key array, e.g. [11, 1] or [3]. Falls back to `fallback` (page/vertical
- * order) when nothing parseable is found. PRD §6.2 post-processing.
+ * order) when nothing parseable is found.
  */
 export function parseSortKey(displayNumber: string, fallback: number[]): number[] {
   const tokens = displayNumber.match(/[A-Za-z]+|[0-9]+/g) ?? [];
@@ -21,7 +21,7 @@ export function parseSortKey(displayNumber: string, fallback: number[]): number[
     }
     if (PREFIX_WORDS.has(token.toLowerCase())) continue;
 
-    // Roman parse before letter parse (PRD §6.4), but only for multi-char
+    // Roman parse before letter parse, but only for multi-char
     // tokens — a bare single letter is far more often a lettered sub-part
     // ("(a)", "(b)") than a roman numeral on a question paper.
     if (token.length > 1 && isRomanNumeral(token)) {
@@ -83,7 +83,7 @@ function normaliseOne(
   };
 }
 
-/** Loose equality for "the numbers agree" (PRD §6.2 stitch rule). */
+/** Loose equality for "the numbers agree" when stitching a page-break split. */
 function numbersAgree(a: string, b: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   return norm(a) === norm(b) || norm(b) === "";
@@ -91,8 +91,7 @@ function numbersAgree(a: string, b: string): boolean {
 
 /**
  * Reconcile raw per-page question extractions into the final ordered
- * Question[] (PRD §6.2 post-processing): stitch page-break splits, dedupe,
- * assign stable ids.
+ * Question[]: stitch page-break splits, dedupe, assign stable ids.
  */
 export function reconcileQuestions(pages: PageQuestions[]): Question[] {
   const sortedPages = [...pages].sort((a, b) => a.pageIndex - b.pageIndex);

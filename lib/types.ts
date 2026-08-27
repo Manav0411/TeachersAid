@@ -1,7 +1,6 @@
 /**
  * Domain data model for the assessment extraction pipeline.
  * Everything else in the app derives from these shapes.
- * See PRD §5 — this is a verbatim implementation of that spec.
  */
 
 /** Normalised to the page: all values 0..1, origin top-left. */

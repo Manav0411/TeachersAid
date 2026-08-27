@@ -3,10 +3,9 @@
 import type { BBox } from "@/lib/types";
 
 /**
- * Ink-tightening (PRD §6.3 post-processing #3) — "a big accuracy win": the
- * model's boxes tend to be loose on one side, so we crop to ink using an
- * offscreen canvas. Runs in the browser because it needs the actual page
- * raster the model saw.
+ * Ink-tightening — a big accuracy win: the model's boxes tend to be loose
+ * on one side, so we crop to ink using an offscreen canvas. Runs in the
+ * browser because it needs the actual page raster the model saw.
  */
 
 const MARGIN = 0.02;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ModelJsonError } from "@/lib/ai/json";
 import type { ApiError } from "@/lib/schemas";
 
-/** Shared by every API route (PRD §8): map a caught error to the typed envelope. */
+/** Shared by every API route: map a caught error to the typed envelope. */
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ModelJsonError) {
     return { code: "invalid_model_output", message: err.message, retryable: true };

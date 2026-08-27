@@ -7,7 +7,7 @@ import { errorResponse, okResponse, toApiError } from "@/lib/ai/route-helpers";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** PRD §6.4 step D — one LLM call for the residue after deterministic matching. */
+/** One LLM call matching whatever's left after deterministic label matching. */
 export async function POST(req: Request) {
   let body: unknown;
   try {

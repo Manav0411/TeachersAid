@@ -2,9 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 import type { GenerateJsonOptions, VisionProvider } from "./provider";
 import { ModelJsonError, parseModelJson } from "./json";
 
-// PRD §3 names Gemini 2.5 Flash, but that model has been retired for new
-// API keys (the API now 404s and points here) — gemini-3.6-flash is its
-// direct successor in the same free-tier flash tier.
+// Gemini 2.5 Flash has been retired for new API keys (the API now 404s and
+// points here) — gemini-3.6-flash is its direct successor in the same
+// free-tier flash tier.
 const MODEL = "gemini-3.6-flash";
 
 const RETRY_INSTRUCTION =
@@ -76,7 +76,7 @@ class GeminiProvider implements VisionProvider {
     } catch (firstErr) {
       if (!(firstErr instanceof ModelJsonError)) throw firstErr;
 
-      // One corrective retry (PRD §8): ask the model to fix its own output.
+      // One corrective retry: ask the model to fix its own output.
       const second = await callModel(
         prompt + RETRY_INSTRUCTION,
         image,

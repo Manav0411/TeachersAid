@@ -1,5 +1,5 @@
 /**
- * Concurrency + retry helpers (PRD §4).
+ * Concurrency + retry helpers.
  *
  * Concurrency is capped at 3 in-flight page requests to stay well under
  * Gemini free-tier rate limits. Retries use exponential backoff on 429/5xx.

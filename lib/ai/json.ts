@@ -1,5 +1,5 @@
 /**
- * Model output hardening (PRD §8).
+ * Model output hardening.
  *
  * Untrusted model text -> JSON, via a cascade of increasingly forgiving
  * strategies. Never throws a raw parse error past this module — callers

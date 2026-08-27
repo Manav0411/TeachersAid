@@ -4,8 +4,8 @@ import { ingestFile } from "@/lib/raster";
 import type { PageAsset } from "@/lib/types";
 
 /**
- * Loads the bundled sample question paper + answer sheet (PRD §9 "Try a
- * sample") and rasterises them exactly like a real upload would.
+ * Loads the bundled sample question paper + answer sheet ("Try a sample")
+ * and rasterises them exactly like a real upload would.
  */
 export async function loadSampleSession(): Promise<{
   questionPages: PageAsset[];

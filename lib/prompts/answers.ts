@@ -1,4 +1,4 @@
-/** Verbatim from PRD §6.3. This is the highest-risk, highest-leverage prompt in the app. */
+/** Answer extraction prompt — the highest-risk, highest-leverage prompt in the app. */
 export const ANSWERS_PROMPT = `You are reading one page of a student's handwritten answer sheet.
 
 Segment the page into ANSWER SEGMENTS. A segment is a contiguous block of writing that

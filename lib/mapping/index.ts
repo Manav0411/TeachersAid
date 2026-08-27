@@ -35,9 +35,10 @@ function splitByInternalLabels(
 export type MappingResult = { mappings: Mapping[]; derivedSegments: AnswerSegment[] };
 
 /**
- * Runs the full deterministic-then-semantic mapping pipeline (PRD §6.4,
- * steps B-F). Step G (manual override) lives in the session reducer, not
- * here — this function only produces the machine's first pass.
+ * Runs the full deterministic-then-semantic mapping pipeline: exact label
+ * match, parent-label split, one LLM call for the residue, then positional
+ * narrowing. Manual override lives in the session reducer, not here — this
+ * function only produces the machine's first pass.
  */
 export async function runMappingEngine(
   questions: Question[],
@@ -71,7 +72,7 @@ export async function runMappingEngine(
     if (!matches || matches.length === 0) continue;
 
     // Clean segment wins; a struck-through duplicate stays attached as a
-    // secondary, greyed by the UI (PRD §6.4 step F, edge case #8).
+    // secondary, greyed by the UI (e.g. the same question answered twice).
     const ordered = [...matches].sort(
       (a, b) => Number(a.isStruckThrough) - Number(b.isStruckThrough)
     );
@@ -128,8 +129,8 @@ export async function runMappingEngine(
       }
     }
     // No internal markers found — fall through to the semantic residue,
-    // which will pick whichever child fits best (PRD's "attach to the best
-    // one" without a dedicated LLM call per parent-only segment).
+    // which will pick whichever child fits best, without a dedicated LLM
+    // call per parent-only segment.
   }
 
   // --- Step D: semantic match for the residue ---------------------------
@@ -218,10 +219,10 @@ export async function runMappingEngine(
 }
 
 /**
- * Asserts the PRD §5 invariant: every Question appears in exactly one
+ * Asserts the core invariant: every Question appears in exactly one
  * Mapping, and every AnswerSegment id appears in at most one Mapping.
- * Logs violations; does not throw (a violated invariant should be visible,
- * not fatal, per PRD §11 "a single page failure degrades to a warning").
+ * Logs violations; does not throw — a violated invariant should be
+ * visible, not fatal, so one bad page never takes down the whole run.
  */
 export function validateMappings(
   questions: Question[],

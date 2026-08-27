@@ -1,9 +1,9 @@
 /**
  * Roman numeral / letter-index helpers shared by question sort-key parsing
  * (lib/questions/reconcile.ts) and label canonicalisation (lib/mapping/labels.ts).
- * PRD §6.2 and §6.4 both need "roman parse before letter parse" — a bare
- * "i" or "v" is ambiguous between a roman numeral and a lettered sub-part,
- * so callers decide which to try first based on context.
+ * Both need "roman parse before letter parse" — a bare "i" or "v" is
+ * ambiguous between a roman numeral and a lettered sub-part, so callers
+ * decide which to try first based on context.
  */
 
 const ROMAN_VALUES: Record<string, number> = {

@@ -13,9 +13,8 @@ export type HighlightRegion = {
 
 /**
  * Renders one page image with regions overlaid as percentages of the same
- * box the image fills (PRD §7) — zoom and resize come free. Highlighting
- * synthesises the PRD's scrim-dim focus mechanic with the Figma's green
- * ring + corner label chip (plan §Design).
+ * box the image fills — zoom and resize come free. Highlighting combines a
+ * dimmed-page focus scrim with the Figma's green ring + corner label chip.
  */
 export function PageCanvas({
   page,

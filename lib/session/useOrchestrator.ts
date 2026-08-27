@@ -24,7 +24,7 @@ import {
   computeSummary,
 } from "@/lib/grading/normalise";
 
-// PRD §9 processing screen weights.
+// Processing screen weights for the determinate progress bar.
 const WEIGHTS = { questions: 25, answers: 40, mapping: 15, grading: 20 };
 const GRADE_BATCH_SIZE = 5;
 
@@ -218,7 +218,7 @@ export function useOrchestrator() {
       const summary = computeSummary(questions, mappings, grades, summaryParts);
       dispatch({ type: "SET_SUMMARY", summary });
 
-      // PRD §11: reach Review whenever ≥1 question and ≥1 answer page were read.
+      // Reach Review whenever ≥1 question and ≥1 answer page were read.
       if (questions.length === 0 || answerPages.length === 0) {
         dispatch({ type: "SET_STAGE", stage: "error" });
       } else {
