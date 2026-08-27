@@ -1,4 +1,7 @@
 import type { AnswerSegment, Question } from "@/lib/types";
+import type { MapModelResponse } from "@/lib/schemas";
+import { postJson } from "@/lib/session/api";
+import { withRetry } from "@/lib/pool";
 
 export type SemanticMatch = {
   answerId: string;
@@ -7,53 +10,44 @@ export type SemanticMatch = {
   reason?: string;
 };
 
-type MapApiResponse =
-  | {
-      ok: true;
-      data: {
-        matches: {
-          answer_id: string;
-          question_id: string | null;
-          confidence: number;
-          reason?: string;
-        }[];
-      };
-    }
-  | { ok: false; error: { code: string; message: string; retryable: boolean } };
-
-/** One LLM call matching the still-unmatched residue. */
+/**
+ * One LLM call matching the still-unmatched residue. Resilient by design —
+ * on total failure (after retries) this returns `[]` rather than throwing,
+ * so one bad mapping call never fails the whole pipeline; the failure is
+ * still logged so it isn't silently invisible during development.
+ */
 export async function semanticMatch(
   questions: Question[],
-  segments: AnswerSegment[]
+  segments: AnswerSegment[],
+  opts: { onRetry?: (err: unknown) => void } = {}
 ): Promise<SemanticMatch[]> {
   if (questions.length === 0 || segments.length === 0) return [];
 
-  const res = await fetch("/api/map", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      questions: questions.map((q) => ({
-        id: q.id,
-        display_number: q.displayNumber,
-        text: q.text,
-        type: q.type,
-      })),
-      segments: segments.map((s) => ({
-        id: s.id,
-        transcript_first_400_chars: s.transcript.slice(0, 400),
-      })),
-    }),
-  });
-
-  const json = (await res.json()) as MapApiResponse;
-  if (!json.ok) {
-    console.warn("[semanticMatch] /api/map failed:", json.error);
+  try {
+    const data = await withRetry(
+      () =>
+        postJson<MapModelResponse>("/api/map", {
+          questions: questions.map((q) => ({
+            id: q.id,
+            display_number: q.displayNumber,
+            text: q.text,
+            type: q.type,
+          })),
+          segments: segments.map((s) => ({
+            id: s.id,
+            transcript_first_400_chars: s.transcript.slice(0, 400),
+          })),
+        }),
+      { onRetry: opts.onRetry }
+    );
+    return data.matches.map((m) => ({
+      answerId: m.answer_id,
+      questionId: m.question_id,
+      confidence: m.confidence,
+      reason: m.reason,
+    }));
+  } catch (err) {
+    console.warn("[semanticMatch] /api/map failed after retries:", err);
     return [];
   }
-  return json.data.matches.map((m) => ({
-    answerId: m.answer_id,
-    questionId: m.question_id,
-    confidence: m.confidence,
-    reason: m.reason,
-  }));
 }

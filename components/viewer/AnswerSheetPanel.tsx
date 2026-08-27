@@ -18,12 +18,18 @@ export function AnswerSheetPanel({
   hoverRegions = [],
   unmatchedRegions = [],
   showUnmatched = false,
+  debugMergedRegions = [],
+  debugFinalRegions = [],
 }: {
   pages: PageAsset[];
   activeRegions: PageRegion[];
   hoverRegions?: PageRegion[];
   unmatchedRegions?: PageRegion[];
   showUnmatched?: boolean;
+  /** ?debug=boxes overlay: pre-tightening (merged) regions, every segment. */
+  debugMergedRegions?: PageRegion[];
+  /** ?debug=boxes overlay: final (post-tightening) regions, every segment. */
+  debugFinalRegions?: PageRegion[];
 }) {
   const [pageIndex, setPageIndex] = useState(pages[0]?.index ?? 0);
   const [zoom, setZoom] = useState(100);
@@ -60,6 +66,12 @@ export function AnswerSheetPanel({
     ...(showUnmatched
       ? unmatchedRegions.filter((r) => r.pageIndex === pageIndex).map((r) => ({ ...r, variant: "unmatched" as const }))
       : []),
+    ...debugMergedRegions
+      .filter((r) => r.pageIndex === pageIndex)
+      .map((r) => ({ ...r, variant: "debug-merged" as const })),
+    ...debugFinalRegions
+      .filter((r) => r.pageIndex === pageIndex)
+      .map((r) => ({ ...r, variant: "debug-final" as const })),
   ];
 
   const otherPagesWithActive = [...pagesWithActiveRegions].filter((p) => p !== pageIndex).sort((a, b) => a - b);
@@ -111,6 +123,17 @@ export function AnswerSheetPanel({
           </button>
         </div>
       </div>
+
+      {(debugMergedRegions.length > 0 || debugFinalRegions.length > 0) && (
+        <div className="flex items-center gap-4 border-b border-line bg-secondary/40 px-4 py-1.5 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="inline-block size-2 border border-dashed border-orange-500" /> merged (pre-tighten)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block size-2 border border-dashed border-sky-500" /> tightened (final)
+          </span>
+        </div>
+      )}
 
       {otherPagesWithActive.length > 0 && (
         <button

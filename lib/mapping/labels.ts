@@ -1,4 +1,4 @@
-import { isRomanNumeral, letterToIndex, romanToInt } from "@/lib/roman";
+import { subPartIndex } from "@/lib/roman";
 
 /**
  * Label canonicalisation. Strips question/answer prefix words and
@@ -20,12 +20,6 @@ const PREFIX_WORDS = new Set([
   "sol",
   "soln",
 ]);
-
-// Single letters that are also roman numerals (i, v, x, l, c, d, m) are
-// overwhelmingly used as roman sub-part labels in practice — a lettered
-// sub-part sequence goes a, b, c, d, e, not jumps to "v" — so treat these
-// as roman by default. Longer tokens are only roman if unambiguously so.
-const AMBIGUOUS_ROMAN_LETTERS = new Set(["i", "v", "x", "l", "c", "d", "m"]);
 
 export type CanonicalLabel = { major: number | null; sub: string | null };
 
@@ -50,19 +44,8 @@ export function canonicalizeLabel(raw: string | null | undefined): CanonicalLabe
     const lower = token.toLowerCase();
     if (PREFIX_WORDS.has(lower)) continue;
 
-    if (token.length > 1 && isRomanNumeral(token)) {
-      subValue = romanToInt(token);
-      continue;
-    }
-    if (token.length === 1) {
-      if (AMBIGUOUS_ROMAN_LETTERS.has(lower)) {
-        subValue = romanToInt(token);
-      } else {
-        const idx = letterToIndex(token);
-        if (idx !== null) subValue = idx;
-      }
-      continue;
-    }
+    const idx = subPartIndex(token);
+    if (idx !== null) subValue = idx;
     // Unrecognised multi-letter word — ignore rather than corrupt the key.
   }
 

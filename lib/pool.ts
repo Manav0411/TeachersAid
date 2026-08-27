@@ -64,7 +64,7 @@ function isRetryable(err: unknown): boolean {
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  opts: { attempts?: number; baseDelayMs?: number } = {}
+  opts: { attempts?: number; baseDelayMs?: number; onRetry?: (err: unknown) => void } = {}
 ): Promise<T> {
   const attempts = opts.attempts ?? 3;
   const baseDelayMs = opts.baseDelayMs ?? 250;
@@ -76,6 +76,7 @@ export async function withRetry<T>(
     } catch (err) {
       lastError = err;
       if (i === attempts - 1 || !isRetryable(err)) throw err;
+      opts.onRetry?.(err);
       const delay = baseDelayMs * Math.pow(4, i); // 250ms, 1s, 4s
       await new Promise((resolve) => setTimeout(resolve, delay));
     }

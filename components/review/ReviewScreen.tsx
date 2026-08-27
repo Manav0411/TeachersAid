@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerSheetPanel";
@@ -34,6 +34,17 @@ export function ReviewScreen({
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [showUnmatched, setShowUnmatched] = useState(false);
+  // ?debug=boxes: overlay pre-tighten (merged) vs. final regions for every
+  // segment, to visually audit box-merge/ink-tightening quality. Read via
+  // window.location directly (not next/navigation) so it never affects
+  // this client-only screen's rendering.
+  const [debugBoxes, setDebugBoxes] = useState(false);
+  useEffect(() => {
+    // Genuinely reading an external system (the URL) once on mount — starting
+    // from `false` on both server and client avoids a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDebugBoxes(new URLSearchParams(window.location.search).get("debug") === "boxes");
+  }, []);
 
   const mappingByQuestion = useMemo(() => new Map(mappings.map((m) => [m.questionId, m])), [mappings]);
   const gradeByQuestion = useMemo(() => new Map(grades.map((g) => [g.questionId, g])), [grades]);
@@ -49,6 +60,7 @@ export function ReviewScreen({
     unanswered: mappings.filter((m) => m.status === "unanswered").length,
     unmatched: mappings.filter((m) => m.status === "unmatched").length,
   };
+  const hasGrades = grades.length > 0;
   const totalAwarded = grades.reduce((s, g) => s + g.awarded, 0);
   const totalMax = grades.reduce((s, g) => s + g.max, 0);
 
@@ -83,29 +95,50 @@ export function ReviewScreen({
     s.regions.map((r) => ({ pageIndex: r.pageIndex, bbox: r.bbox, variant: "unmatched" as const }))
   );
 
+  const debugMergedRegions: PageRegion[] = debugBoxes
+    ? segments.flatMap((s) =>
+        (s.debugMergedRegions ?? []).map((r) => ({
+          pageIndex: r.pageIndex,
+          bbox: r.bbox,
+          variant: "debug-merged" as const,
+        }))
+      )
+    : [];
+  const debugFinalRegions: PageRegion[] = debugBoxes
+    ? segments.flatMap((s) =>
+        s.regions.map((r) => ({ pageIndex: r.pageIndex, bbox: r.bbox, variant: "debug-final" as const }))
+      )
+    : [];
+
   return (
     <AppShell collapsed>
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-line bg-white px-6 py-3">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold">
-              {totalAwarded} / {totalMax} · {totalMax > 0 ? Math.round((totalAwarded / totalMax) * 100) : 0}%
-            </span>
+            {hasGrades && (
+              <span className="text-sm font-semibold">
+                {totalAwarded} / {totalMax} · {totalMax > 0 ? Math.round((totalAwarded / totalMax) * 100) : 0}%
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">
               {counts.answered} answered · {counts.unanswered} unanswered · {counts.unmatched} unmatched
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {hasGrades && (
+              <button
+                type="button"
+                onClick={onOpenSummary}
+                className="rounded-pill border border-line px-4 py-1.5 text-xs font-medium hover:bg-secondary/50"
+              >
+                Summary
+              </button>
+            )}
             <button
               type="button"
-              onClick={onOpenSummary}
-              className="rounded-pill border border-line px-4 py-1.5 text-xs font-medium hover:bg-secondary/50"
-            >
-              Summary
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white"
+              title="Coming soon"
+              disabled
+              className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white opacity-40"
             >
               <Download className="size-3.5" /> Export report
             </button>
@@ -183,6 +216,8 @@ export function ReviewScreen({
               hoverRegions={hoverRegions}
               unmatchedRegions={unmatchedRegions}
               showUnmatched={showUnmatched}
+              debugMergedRegions={debugMergedRegions}
+              debugFinalRegions={debugFinalRegions}
             />
             {unmatchedSegments.length > 0 && (
               <div className="rounded-2xl border border-line bg-white p-3 shadow-sm">

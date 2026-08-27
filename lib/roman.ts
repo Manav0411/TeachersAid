@@ -25,6 +25,28 @@ export function isRomanNumeral(token: string): boolean {
   return upper.length > 0 && VALID_ROMAN.test(upper) && upper !== "";
 }
 
+// Single letters that are also roman numerals (i, v, x, l, c, d, m) are
+// overwhelmingly used as roman sub-part labels in practice — a lettered
+// sub-part sequence goes a, b, c, d, e, not jumps to "v" — so both sort-key
+// parsing and label canonicalisation treat these as roman by default.
+export const AMBIGUOUS_ROMAN_LETTERS = new Set(["i", "v", "x", "l", "c", "d", "m"]);
+
+/**
+ * Resolves a single- or multi-character sub-part token to a 1-based index,
+ * trying roman first then falling back to a plain letter index — the
+ * shared "roman parse before letter parse" rule every sub-part parser in
+ * this app needs. Returns null for anything unrecognised.
+ */
+export function subPartIndex(token: string): number | null {
+  if (token.length > 1 && isRomanNumeral(token)) return romanToInt(token);
+  if (token.length === 1) {
+    const lower = token.toLowerCase();
+    if (AMBIGUOUS_ROMAN_LETTERS.has(lower)) return romanToInt(token);
+    return letterToIndex(token);
+  }
+  return null;
+}
+
 export function romanToInt(token: string): number {
   const upper = token.toUpperCase();
   let total = 0;

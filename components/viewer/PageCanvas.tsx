@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export type HighlightRegion = {
   bbox: BBox;
   label?: string;
-  variant?: "active" | "hover" | "unmatched";
+  variant?: "active" | "hover" | "unmatched" | "debug-merged" | "debug-final";
 };
 
 /**
@@ -44,7 +44,11 @@ export function PageCanvas({
       <img src={page.dataUrl} alt={`Page ${page.index + 1}`} className="block w-full h-auto rounded-md" />
       {regions.map((region, i) => {
         const padded = padBBoxForDisplay(region.bbox);
-        const isActive = region.variant !== "hover" && region.variant !== "unmatched";
+        const isActive =
+          region.variant !== "hover" &&
+          region.variant !== "unmatched" &&
+          region.variant !== "debug-merged" &&
+          region.variant !== "debug-final";
         return (
           <div
             key={i}
@@ -53,6 +57,8 @@ export function PageCanvas({
               "absolute z-20 rounded-md border-2 pointer-events-none transition-all duration-200",
               region.variant === "unmatched" && "border-amber-500 bg-amber-500/10",
               region.variant === "hover" && "border-success/60 bg-success/5",
+              region.variant === "debug-merged" && "z-30 rounded-none border border-dashed border-orange-500 bg-transparent",
+              region.variant === "debug-final" && "z-30 rounded-none border border-dashed border-sky-500 bg-transparent",
               isActive && "border-success bg-success/15 shadow-[0_0_0_3px_rgba(52,172,21,0.15)]"
             )}
             style={{

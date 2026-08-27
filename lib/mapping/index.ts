@@ -34,6 +34,15 @@ function splitByInternalLabels(
 
 export type MappingResult = { mappings: Mapping[]; derivedSegments: AnswerSegment[] };
 
+const ROUGH_WORK_PREFIX = /^\s*\[rough work\]/i;
+
+/** True for a segment the extraction prompt flagged as rough work / margin
+ * notes (lib/prompts/answers.ts rule 5) — these must never be mapped to a
+ * question or graded, only surfaced for visibility. */
+function isRoughWork(seg: AnswerSegment): boolean {
+  return ROUGH_WORK_PREFIX.test(seg.transcript);
+}
+
 /**
  * Runs the full deterministic-then-semantic mapping pipeline: exact label
  * match, parent-label split, one LLM call for the residue, then positional
@@ -41,8 +50,9 @@ export type MappingResult = { mappings: Mapping[]; derivedSegments: AnswerSegmen
  * function only produces the machine's first pass.
  */
 export async function runMappingEngine(
-  questions: Question[],
-  segments: AnswerSegment[]
+  allQuestions: Question[],
+  allSegments: AnswerSegment[],
+  opts: { onRetry?: (err: unknown) => void } = {}
 ): Promise<MappingResult> {
   const mappings: Mapping[] = [];
   const claimedQuestionIds = new Set<string>();
@@ -55,11 +65,43 @@ export async function runMappingEngine(
     mapping.segmentIds.forEach((id) => claimedSegmentIds.add(id));
   }
 
+  // --- Step 0: exclude rough work / margin notes from mapping entirely ---
+  // (edge case: "Rough work in a margin ... never mapped, excluded from
+  // grading"). These still show up in the Unmatched-answers tray below for
+  // visibility/manual override, but the algorithm never guesses a question
+  // for them — a still-open positional-narrowing gap otherwise force-
+  // assigns any leftover segment to the sole remaining unanswered question.
+  const questions = allQuestions;
+  const segments = allSegments.filter((s) => !isRoughWork(s));
+  for (const seg of allSegments) {
+    if (isRoughWork(seg)) {
+      claim({
+        questionId: null,
+        segmentIds: [seg.id],
+        status: "unmatched",
+        method: "label",
+        confidence: 0,
+        rationale: "Rough work — excluded from mapping",
+      });
+    }
+  }
+
   // --- Step B: exact label match ---------------------------------------
+  // A segment's canonical label can have sub: null for two very different
+  // reasons: (1) the question paper simply doesn't use sub-parts for that
+  // number — by far the common case, and an exact match here is exactly
+  // right — or (2) the segment names only a parent that DOES have lettered
+  // children ("11" on a paper with 11(a)/11(b)). Case (2) resolves itself:
+  // no question's own canonical key is bare "11" when only its sub-parts
+  // exist, so the lookup below simply won't find a match and the segment
+  // falls through untouched to step C. Excluding sub:null segments here
+  // outright — as an earlier version of this code did — silently skipped
+  // exact matching for every plain-numbered answer on a paper with no
+  // sub-parts at all, which is the single most common case.
   const byCanonicalLabel = new Map<string, AnswerSegment[]>();
   for (const seg of segments) {
     const c = canonicalizeLabel(seg.detectedLabel);
-    if (!c || c.sub === null) continue; // parent-only / unlabeled -> steps C/D
+    if (!c) continue; // no label at all -> steps C/D
     const key = labelKey(c);
     if (!byCanonicalLabel.has(key)) byCanonicalLabel.set(key, []);
     byCanonicalLabel.get(key)!.push(seg);
@@ -71,11 +113,20 @@ export async function runMappingEngine(
     const matches = byCanonicalLabel.get(labelKey(c));
     if (!matches || matches.length === 0) continue;
 
-    // Clean segment wins; a struck-through duplicate stays attached as a
-    // secondary, greyed by the UI (e.g. the same question answered twice).
-    const ordered = [...matches].sort(
-      (a, b) => Number(a.isStruckThrough) - Number(b.isStruckThrough)
-    );
+    // Multiple segments sharing one label are only safe to concatenate
+    // when at least one is struck through — the genuine "answered twice"
+    // case (edge case #8). When ≥2 *clean* segments share a label, that's
+    // extraction ambiguity (e.g. the model attributing a nearby label to
+    // an unlabeled block that follows it closely), not a duplicate attempt
+    // — concatenating them would silently swallow what's likely a
+    // different question's answer. Claim only the first clean one in
+    // reading order here and leave the rest for steps D/E to resolve
+    // independently, rather than guessing they belong together.
+    const struckThrough = matches.filter((s) => s.isStruckThrough);
+    const clean = matches.filter((s) => !s.isStruckThrough);
+    const claimed = clean.length > 1 ? clean.slice(0, 1) : clean;
+    const ordered = [...claimed, ...struckThrough];
+
     claim({
       questionId: q.id,
       segmentIds: ordered.map((s) => s.id),
@@ -136,7 +187,7 @@ export async function runMappingEngine(
   // --- Step D: semantic match for the residue ---------------------------
   const residueSegments = segments.filter((s) => !claimedSegmentIds.has(s.id));
   const residueQuestions = questions.filter((q) => !claimedQuestionIds.has(q.id));
-  const semanticMatches = await semanticMatch(residueQuestions, residueSegments);
+  const semanticMatches = await semanticMatch(residueQuestions, residueSegments, opts);
 
   const sortedMatches = [...semanticMatches].sort((a, b) => b.confidence - a.confidence);
   for (const m of sortedMatches) {

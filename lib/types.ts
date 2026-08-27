@@ -47,6 +47,9 @@ export type AnswerSegment = {
   isStruckThrough: boolean; // crossed out by the student
   legibility: "clear" | "partial" | "illegible";
   confidence: number; // 0..1, OCR confidence
+  /** Regions before ink-tightening — kept only for the `?debug=boxes`
+   * overlay, so merge vs. tighten quality can be inspected visually. */
+  debugMergedRegions?: AnswerRegion[];
 };
 
 export type MappingStatus = "answered" | "unanswered" | "unmatched";

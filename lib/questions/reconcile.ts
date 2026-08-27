@@ -1,7 +1,7 @@
 import type { Question } from "@/lib/types";
 import type { RawQuestion } from "@/lib/schemas";
 import { toBBox } from "@/lib/boxes";
-import { isRomanNumeral, letterToIndex, romanToInt } from "@/lib/roman";
+import { subPartIndex } from "@/lib/roman";
 
 const PREFIX_WORDS = new Set(["q", "qn", "ques", "question"]);
 
@@ -21,18 +21,8 @@ export function parseSortKey(displayNumber: string, fallback: number[]): number[
     }
     if (PREFIX_WORDS.has(token.toLowerCase())) continue;
 
-    // Roman parse before letter parse, but only for multi-char
-    // tokens — a bare single letter is far more often a lettered sub-part
-    // ("(a)", "(b)") than a roman numeral on a question paper.
-    if (token.length > 1 && isRomanNumeral(token)) {
-      nums.push(romanToInt(token));
-      continue;
-    }
-    if (token.length === 1) {
-      const idx = letterToIndex(token);
-      if (idx !== null) nums.push(idx);
-      continue;
-    }
+    const idx = subPartIndex(token);
+    if (idx !== null) nums.push(idx);
     // Unparseable stray word — ignore it rather than corrupt the key.
   }
 

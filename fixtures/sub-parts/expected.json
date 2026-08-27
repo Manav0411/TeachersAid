@@ -1,0 +1,32 @@
+{
+  "description": "Synthetic (typed) General Science test. Exercises: a two-column Section A (reading order must finish the left column before the right), a lettered sub-part group (11a/11b/11c), and a roman-numeral sub-part group (12i/12ii/12iii) — with a descriptive stem line above each group that is not itself a question.",
+  "questions": [
+    { "displayNumber": "1.", "type": "short" },
+    { "displayNumber": "2.", "type": "short" },
+    { "displayNumber": "3.", "type": "short" },
+    { "displayNumber": "4.", "type": "short" },
+    { "displayNumber": "11 (a)", "marks": 2, "type": "short", "parentNumber": "11" },
+    { "displayNumber": "11 (b)", "marks": 2, "type": "short", "parentNumber": "11" },
+    { "displayNumber": "11 (c)", "marks": 1, "type": "short", "parentNumber": "11" },
+    { "displayNumber": "12 (i)", "marks": 1, "type": "short", "parentNumber": "12" },
+    { "displayNumber": "12 (ii)", "marks": 1, "type": "short", "parentNumber": "12" },
+    { "displayNumber": "12 (iii)", "marks": 1, "type": "short", "parentNumber": "12" }
+  ],
+  "notes": [
+    "The '11.' and '12.' stem lines are descriptive intros, not questions in their own right — whether the model also emits them as separate entries is model-dependent and not load-bearing for this fixture; what matters is that all six lettered/roman sub-parts are split correctly with the right parentNumber and sortKey order.",
+    "Section A (1-4) must come before Section B (11, 12) in the extracted order, and within Section A, 1 and 2 (left column) must come before 3 and 4 (right column) even though 3/4 are positioned to the right of 1/2 on the page."
+  ],
+  "mappings": {
+    "1.": { "status": "answered", "method": "label" },
+    "2.": { "status": "answered", "method": "label" },
+    "3.": { "status": "answered", "method": "label" },
+    "4.": { "status": "answered", "method": "label" },
+    "11 (a)": { "status": "answered", "method": "label" },
+    "11 (b)": { "status": "answered", "method": "label" },
+    "11 (c)": { "status": "answered", "method": "label" },
+    "12 (i)": { "status": "answered", "method": "label" },
+    "12 (ii)": { "status": "answered", "method": "label" },
+    "12 (iii)": { "status": "answered", "method": "label" }
+  },
+  "edgeCasesCovered": [1, 13]
+}

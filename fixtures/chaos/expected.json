@@ -1,0 +1,21 @@
+{
+  "description": "Synthetic (typed) Environmental Science test. Exercises: answers written out of order (Q4's answer is written first), one genuinely unlabeled answer, one answer mislabeled with a number that doesn't exist on the paper (7 — the paper only has 1-5), and one answer that is entirely off-topic and must stay unmatched rather than be force-mapped.",
+  "questions": [
+    { "displayNumber": "1.", "marks": 1, "type": "short" },
+    { "displayNumber": "2.", "marks": 1, "type": "short" },
+    { "displayNumber": "3.", "marks": 1, "type": "short" },
+    { "displayNumber": "4.", "marks": 1, "type": "short" },
+    { "displayNumber": "5.", "marks": 2, "type": "short" }
+  ],
+  "mappings": {
+    "1.": { "status": "answered", "method": "label", "note": "correctly labelled, though written second on the page" },
+    "2.": { "status": "answered", "method": "positional or semantic", "note": "the student wrote no label at all for this one — must still be matched by content/position, not left unanswered" },
+    "3.": { "status": "answered", "method": "label" },
+    "4.": { "status": "answered", "method": "label", "note": "correctly labelled, though written FIRST on the page — out-of-order must not break label matching" },
+    "5.": { "status": "answered", "method": "semantic", "note": "mislabelled '7' on the sheet — no question 7 exists, so label matching must fail over to the semantic step, which should still recognise this as the water-cycle answer for Q5" }
+  },
+  "unmatchedSegments": [
+    { "detectedLabel": "9.", "note": "genuinely off-topic (oxygen's chemical symbol) — must remain unmatched, not force-assigned to any question" }
+  ],
+  "edgeCasesCovered": [2, 4, 6, 7]
+}

@@ -21,6 +21,14 @@ describe("parseSortKey", () => {
   it("parses roman '(iii)' -> [3]", () => {
     expect(parseSortKey("(iii)", [0])).toEqual([3]);
   });
+  it("parses a single-char roman sub-part '(i)' as roman 1, not letter 9 (regression)", () => {
+    // Found live: with sibling "12 (ii)"/"12 (iii)" on the same paper, a
+    // bare "12 (i)" was sorting after both because "i" was parsed as the
+    // 9th letter instead of roman numeral 1.
+    expect(parseSortKey("12 (i)", [0])).toEqual([12, 1]);
+    expect(parseSortKey("12 (ii)", [0])).toEqual([12, 2]);
+    expect(parseSortKey("12 (iii)", [0])).toEqual([12, 3]);
+  });
   it("falls back when nothing parses", () => {
     expect(parseSortKey("***", [42])).toEqual([42]);
   });
