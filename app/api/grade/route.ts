@@ -1,0 +1,37 @@
+import { geminiProvider } from "@/lib/ai/gemini";
+import { withRetry } from "@/lib/pool";
+import { buildGradingPrompt } from "@/lib/prompts/grading";
+import { GradeModelResponse, GradeRequest } from "@/lib/schemas";
+import { errorResponse, okResponse, toApiError } from "@/lib/ai/route-helpers";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+/** PRD §6.5 — batches of ≤5 items, text only. */
+export async function POST(req: Request) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return errorResponse({ code: "invalid_request", message: "Request body must be JSON", retryable: false });
+  }
+
+  const parsedReq = GradeRequest.safeParse(body);
+  if (!parsedReq.success) {
+    return errorResponse({ code: "invalid_request", message: parsedReq.error.message, retryable: false });
+  }
+
+  if (parsedReq.data.items.length === 0) {
+    return okResponse({ grades: [] });
+  }
+
+  try {
+    const raw = await withRetry(() =>
+      geminiProvider.generateJson({ prompt: buildGradingPrompt(parsedReq.data.items) })
+    );
+    const data = GradeModelResponse.parse(raw);
+    return okResponse(data);
+  } catch (err) {
+    return errorResponse(toApiError(err));
+  }
+}

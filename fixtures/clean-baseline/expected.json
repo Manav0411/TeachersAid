@@ -1,0 +1,22 @@
+{
+  "description": "Synthetic (typed, not handwritten) Biology unit test. Exercises: MCQ, marks, section headers, a struck-through duplicate answer, one unanswered question, and a rough-work note. Same file the 'Try a sample' button loads.",
+  "questions": [
+    { "displayNumber": "1.", "marks": 1, "type": "short" },
+    { "displayNumber": "2.", "marks": 1, "type": "mcq" },
+    { "displayNumber": "3.", "marks": 2, "type": "short" },
+    { "displayNumber": "4.", "marks": 3, "type": "long" },
+    { "displayNumber": "5 (a).", "marks": 2, "type": "short", "parentNumber": "5" },
+    { "displayNumber": "5 (b).", "marks": 2, "type": "short", "parentNumber": "5" },
+    { "displayNumber": "6.", "marks": 3, "type": "long" }
+  ],
+  "mappings": {
+    "1.": { "status": "answered", "method": "label", "note": "two segments: one struck-through, one clean — clean one should be graded" },
+    "2.": { "status": "answered", "method": "label" },
+    "3.": { "status": "answered", "method": "label" },
+    "4.": { "status": "answered", "method": "label" },
+    "5 (a).": { "status": "answered", "method": "label" },
+    "5 (b).": { "status": "answered", "method": "label" },
+    "6.": { "status": "unanswered", "note": "left blank in the answer sheet; a rough-work note near it must NOT be graded as an answer" }
+  },
+  "edgeCasesCovered": [1, 3, 8, 9]
+}
