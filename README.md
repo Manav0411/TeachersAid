@@ -4,7 +4,7 @@ A single-page app where a teacher uploads a **question paper** and one student's
 **handwritten answer sheet**. The app extracts every question in printed order,
 transcribes the student's answers, maps answers to questions, lets the teacher
 click any question to see the exact ink highlighted on the answer sheet, grades
-each answer, and produces a summary — all within about a minute.
+each answer, and produces a summary, all within about a minute.
 
 Built for the VedaAI hiring assignment.
 
@@ -17,7 +17,7 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Click **"Try a sample instead"**
-on the upload screen to run the full pipeline with no files of your own —
+on the upload screen to run the full pipeline with no files of your own
 against a typed question paper and a **genuinely handwritten** answer
 sheet (real ink, not synthesised), the same one verified in the Accuracy
 section below.
@@ -26,7 +26,7 @@ section below.
 pnpm test            # unit tests (labels, boxes, reconciliation, invariants)
 pnpm lint             # eslint
 pnpm exec tsc --noEmit  # typecheck
-pnpm gen:samples      # regenerate the typed baseline PDFs (scripts/gen-samples.mjs) —
+pnpm gen:samples      # regenerate the typed baseline PDFs (scripts/gen-samples.mjs);
                       # NOT the bundled sample's answer sheet, which is real
                       # handwriting; see the script's own header comment
 ```
@@ -51,7 +51,7 @@ Browser (session state)
 Stages 1 and 2 run in parallel (independent); stage 3 needs both; stage 4 needs stage 3.
 
 All session state lives in the browser (`lib/session/reducer.ts` + `useReducer`).
-API routes are pure, stateless functions — no server-side session store, so it
+API routes are pure, stateless functions, with no server-side session store, so it
 works unmodified on serverless (Vercel). Concurrency is capped at 3 in-flight
 page requests (`lib/pool.ts`), with exponential-backoff retry on 429/5xx.
 
@@ -72,24 +72,24 @@ page requests (`lib/pool.ts`), with exponential-backoff retry on 429/5xx.
 
 **Why Gemini.** Highlighting "the exact region" needs coordinates tied to a
 semantic answer segment, not just a text dump. Gemini returns, per answer
-segment, both a transcript and line-level bounding boxes in one call — a
+segment, both a transcript and line-level bounding boxes in one call; a
 plain OCR API doesn't give you that link. The model is called only through
 `lib/ai/provider.ts`, so swapping it is a one-file change.
 
 > **Note on the model:** Gemini 2.5 Flash has since been retired for new API
-> keys — the API 404s and points to its successor. `lib/ai/gemini.ts` uses
+> keys: the API 404s and points to its successor. `lib/ai/gemini.ts` uses
 > `gemini-3.6-flash` instead, in the same free-tier flash class, with a
 > one-line comment explaining the swap.
 
-**Why Groq for grading.** Grading and summary generation are text-only —
-no image, no coordinates — so they don't need Gemini's vision quota at
+**Why Groq for grading.** Grading and summary generation are text-only,
+no image, no coordinates, so they don't need Gemini's vision quota at
 all. Moving them to Groq's free tier (`lib/ai/groq.ts`, via the Vercel AI
 SDK's `generateObject`) means the two most quota-hungry stages (reading
 every page of both documents) never compete with grading/summary for the
 same rate limit.
 
 **Why deterministic-then-semantic mapping.** An LLM call for every
-answer-to-question match would be slow, costly, and — worse — silently
+answer-to-question match would be slow, costly, and, worse, silently
 wrong in ways that are hard to audit. Instead, `lib/mapping/index.ts` runs,
 in order: (B) exact label match after canonicalising "Q.11(a)" / "Ans 11 A"
 / "11-i" onto one scale, (C) parent-only labels split by embedded sub-part
@@ -106,7 +106,7 @@ fractions of the same raster the model saw, merges per-line boxes into ≤4
 clean regions, and `lib/boxes.client.ts` tightens each region to the actual
 ink via an offscreen canvas (grayscale → Otsu threshold → ink row/col
 profile → crop). `components/viewer/PageCanvas.tsx` then renders every
-region as a `%`-positioned `<div>` over the `<img>` — never a pixel offset —
+region as a `%`-positioned `<div>` over the `<img>`, never a pixel offset,
 so zoom and resize come for free.
 
 
@@ -114,17 +114,17 @@ so zoom and resize come for free.
 
 - **No answer key.** The model derives a reference answer from the question
   itself; grading is indicative, and the Summary screen says so.
-- **One student, one session, in-memory only** — a refresh loses the run, by design.
+- **One student, one session, in-memory only**: a refresh loses the run, by design.
 - Answer sheets are assumed reasonably upright; skew beyond ~10° degrades box
-  accuracy (no auto-deskew — the brief allows warning instead).
+  accuracy (no auto-deskew; the brief allows warning instead).
 - English-language papers; mixed-script content degrades gracefully rather
-  than crashing (a bad page is skipped, never fails the whole run — see
+  than crashing (a bad page is skipped, never fails the whole run; see
   `lib/ai/json.ts` and the `withRetry`/pooling in `lib/pool.ts`).
 - 20-page cap per document, 10MB per file (matches the Figma dropzone copy).
 - The mapping engine's step C (parent-only label split) works by detecting
   embedded sub-part markers in the transcript text; when a parent-labelled
   answer has no such markers, it falls through to the semantic residue step
-  rather than a dedicated per-segment LLM call — a scope trade-off, noted
+  rather than a dedicated per-segment LLM call, a scope trade-off, noted
   inline in `lib/mapping/index.ts`.
 - **Gemini's free tier caps `gemini-3.6-flash` at 20 requests/day per
   project** (confirmed directly against Google's quota API, not a guess).
@@ -138,8 +138,8 @@ so zoom and resize come for free.
 Given more time, the localization and transcription steps would be worth
 splitting rather than asking one general-purpose vision model to do both
 in a single call. A fine-tuned object-detection model (e.g. YOLO) trained
-on handwritten answer sheets could handle *localization* specifically —
-detecting ink regions, line boundaries, and strike-throughs directly — and
+on handwritten answer sheets could handle *localization* specifically:
+detecting ink regions, line boundaries, and strike-throughs directly, and
 hand off to a dedicated handwriting-recognition model for *transcription*
 within each detected region. This detect-then-recognize split is the more
 established pattern for OCR-heavy pipelines and would likely improve both
@@ -147,7 +147,7 @@ localization precision and transcription accuracy on messier real-world
 handwriting, at the cost of needing labelled training data and a
 training/serving setup that neither free-tier API requires today. Given
 the timeframe, Gemini end-to-end was the right trade-off for this
-assignment — it's the first thing worth investing in beyond it.
+assignment; it's the first thing worth investing in beyond it.
 
 ## Accuracy
 
@@ -208,7 +208,7 @@ Across all **29 evaluated question instances**, the system produced **0 silent w
 ## Deployment
 
 Deploy to Vercel with `GEMINI_API_KEY` and `GROQ_API_KEY` set as project
-environment variables — no other configuration needed; every API route is
+environment variables; no other configuration needed; every API route is
 already `runtime = 'nodejs'` with `maxDuration = 60` and holds no
 server-side state.
 
