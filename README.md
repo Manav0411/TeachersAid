@@ -12,7 +12,7 @@ Built for the VedaAI hiring assignment.
 
 ```bash
 pnpm install
-cp .env.example .env.local   # then set GEMINI_API_KEY
+cp .env.example .env.local   # then set GEMINI_API_KEY and GROQ_API_KEY
 pnpm dev
 ```
 
@@ -38,7 +38,9 @@ Browser (session state)
 /api/extract-questions  /api/extract-answers   /api/map   /api/grade, /api/summary
    (1 page/req)            (1 page/req)      (text only)      (text only)
        │                │                 │                │
-       └────────────────┴──────►  Gemini (via lib/ai/provider.ts)  ◄┴────────
+       └────────┬───────┘                 └────────┬────────┘
+                 ▼                                   ▼
+     Gemini (lib/ai/provider.ts)          Groq free tier (lib/ai/groq.ts)
 ```
 
 **Pipeline:** Question Extraction → Answer Extraction → Answer Mapping → Grading/Feedback.
@@ -54,7 +56,8 @@ page requests (`lib/pool.ts`), with exponential-backoff retry on 429/5xx.
 | File | Responsibility |
 |---|---|
 | `lib/types.ts` | The domain model everything else derives from |
-| `lib/ai/provider.ts` + `lib/ai/gemini.ts` | Model client behind a swappable interface |
+| `lib/ai/provider.ts` + `lib/ai/gemini.ts` | Extraction model client (vision) behind a swappable interface |
+| `lib/ai/groq.ts` | Grading/summary model client (text-only, Groq's free tier) |
 | `lib/ai/json.ts` | Fence-strip → brace-match → one corrective retry → typed error |
 | `lib/boxes.ts` + `lib/boxes.client.ts` | Box merge/sanitise (pure) + ink-tightening (canvas) |
 | `lib/mapping/{labels,semantic,positional,index}.ts` | The deterministic-then-semantic mapping engine |
@@ -73,6 +76,13 @@ plain OCR API doesn't give you that link. The model is called only through
 > keys — the API 404s and points to its successor. `lib/ai/gemini.ts` uses
 > `gemini-3.6-flash` instead, in the same free-tier flash class, with a
 > one-line comment explaining the swap.
+
+**Why Groq for grading.** Grading and summary generation are text-only —
+no image, no coordinates — so they don't need Gemini's vision quota at
+all. Moving them to Groq's free tier (`lib/ai/groq.ts`, via the Vercel AI
+SDK's `generateObject`) means the two most quota-hungry stages (reading
+every page of both documents) never compete with grading/summary for the
+same rate limit.
 
 **Why deterministic-then-semantic mapping.** An LLM call for every
 answer-to-question match would be slow, costly, and — worse — silently
@@ -98,12 +108,21 @@ so zoom and resize come for free.
 ## Design
 
 The Figma (`GEjt1rt1s7AXvkcr4t8muE`) supplied the **design language** — the
-VedaAI app shell, palette (`#FF7950→#C0350A` accent, `#34AC15` success),
-Inter/Bricolage Grotesque type, pill shapes — which this app wears
-throughout. The Figma covers three screens; this app needed several more
-(a real processing stepper, filters, an unmatched-answers tray, manual
-override, a summary view), so those are original layouts in the same
-language rather than a pixel clone.
+VedaAI app shell, Inter/Bricolage Grotesque type, pill shapes, mascot
+illustration — which this app wears throughout (the mascot itself is
+cropped straight from the Figma canvas, since the shared file is
+viewer-only and has no asset-export access). The Figma covers three
+screens, each with a desktop and phone frame; this app needed several
+more (a real processing stepper, filters, an unmatched-answers tray,
+manual override, a summary view, mobile nav) — those are original layouts
+in the same language rather than a pixel clone, per explicit sign-off to
+prioritize matching design *language* over an exact clone.
+
+The accent palette was later swapped from the Figma's original
+orange/red to a calmer blue/green (`app/globals.css`), sampled from
+[intelgrader.com](https://intelgrader.com) per follow-up design feedback —
+every color lives behind a handful of CSS custom properties, so the whole
+app recolors from that one file.
 
 ## Assumptions & limitations
 
@@ -137,9 +156,10 @@ for the full harness and how to extend it with real handwritten scans.
 
 ## Deployment
 
-Deploy to Vercel with `GEMINI_API_KEY` set as a project environment
-variable — no other configuration needed; every API route is already
-`runtime = 'nodejs'` with `maxDuration = 60` and holds no server-side state.
+Deploy to Vercel with `GEMINI_API_KEY` and `GROQ_API_KEY` set as project
+environment variables — no other configuration needed; every API route is
+already `runtime = 'nodejs'` with `maxDuration = 60` and holds no
+server-side state.
 
 ## Out of scope
 
