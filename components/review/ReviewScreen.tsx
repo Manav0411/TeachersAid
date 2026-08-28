@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Plus, Search } from "lucide-react";
+import { Download, Plus, Search, TriangleAlert, X } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerSheetPanel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,7 +30,8 @@ export function ReviewScreen({
   onOpenSummary: () => void;
   onNewUpload: () => void;
 }) {
-  const { questions, segments, mappings, grades } = session;
+  const { questions, segments, mappings, grades, errors } = session;
+  const [errorsDismissed, setErrorsDismissed] = useState(false);
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(questions[0]?.id ?? null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [hoveredQuestionId, setHoveredQuestionId] = useState<string | null>(null);
@@ -191,6 +192,29 @@ export function ReviewScreen({
           </button>
         </div>
 
+        {/* Extraction ran to completion, but not every page necessarily
+            read cleanly — ProcessingScreen shows this same list while the
+            run is in progress, but once we're on Review it was otherwise
+            never surfaced again, leaving missing questions/answers
+            unexplained. Dismissible since it's informational, not blocking. */}
+        {errors.length > 0 && !errorsDismissed && (
+          <div className="flex items-start gap-2 border-b border-line bg-amber-50 px-6 py-2.5 text-xs text-amber-700">
+            <TriangleAlert className="size-4 shrink-0" />
+            <span className="flex-1">
+              {errors.length} page{errors.length === 1 ? "" : "s"} had a problem during extraction — some
+              questions or answers may be missing.
+            </span>
+            <button
+              type="button"
+              onClick={() => setErrorsDismissed(true)}
+              aria-label="Dismiss"
+              className="shrink-0 rounded p-0.5 hover:bg-amber-100"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
+
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 bg-page-working p-4 lg:grid-cols-[380px_1fr]">
           <div
             className={cn(
@@ -275,7 +299,10 @@ export function ReviewScreen({
                   onHoverChange={(hovering) => setHoveredQuestionId(hovering ? q.id : null)}
                   onReassign={(questionId) => {
                     const mapping = mappingByQuestion.get(q.id);
-                    if (mapping?.segmentIds[0]) onReassign(mapping.segmentIds[0], questionId);
+                    // A mapping can hold more than one segment (merged
+                    // duplicates, or prior manual reassignments) — detach
+                    // all of them, not just the first.
+                    mapping?.segmentIds.forEach((segmentId) => onReassign(segmentId, questionId));
                   }}
                 />
               ))}

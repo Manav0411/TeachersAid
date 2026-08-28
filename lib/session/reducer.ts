@@ -78,11 +78,22 @@ export function sessionReducer(state: Session, action: SessionAction): Session {
     case "REASSIGN_SEGMENT": {
       const mappings = state.mappings
         // remove the segment from any mapping it currently belongs to
-        .map((m) => ({
-          ...m,
-          segmentIds: m.segmentIds.filter((id) => id !== action.segmentId),
-        }))
-        .filter((m) => m.segmentIds.length > 0 || m.questionId === null);
+        .map((m) => {
+          if (!m.segmentIds.includes(action.segmentId)) return m;
+          const segmentIds = m.segmentIds.filter((id) => id !== action.segmentId);
+          if (segmentIds.length > 0 || m.questionId === null) {
+            return { ...m, segmentIds };
+          }
+          // Losing its last segment shouldn't make the question's mapping
+          // disappear outright — it just has no answer anymore.
+          return {
+            ...m,
+            segmentIds,
+            status: "unanswered" as const,
+            method: "manual" as const,
+            confidence: 1,
+          };
+        });
 
       if (action.questionId === null) {
         mappings.push({

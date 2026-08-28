@@ -54,17 +54,31 @@ export function useOrchestrator() {
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
+    abortRef.current = null;
   }, []);
 
   const run = useCallback(
     async (questionPages: PageAsset[], answerPages: PageAsset[]) => {
+      // Guards against two synchronous trigger clicks (before React
+      // re-renders past the Upload screen) both starting a run and
+      // interleaving two orchestrations against the same session state.
+      if (abortRef.current) return;
       const controller = new AbortController();
       abortRef.current = controller;
       const aborted = () => controller.signal.aborted;
+      const signal = controller.signal;
+      // A page/batch request can still resolve (success or failure) after
+      // cancel() has already reset the session — dispatching into it then
+      // would resurrect state the user just backed out of. Route every
+      // dispatch in this run through this guard instead of the raw
+      // dispatch, so a late-arriving one is silently dropped.
+      const safeDispatch: typeof dispatch = (action) => {
+        if (!aborted()) dispatch(action);
+      };
 
-      dispatch({ type: "SET_QUESTION_PAGES", pages: questionPages });
-      dispatch({ type: "SET_ANSWER_PAGES", pages: answerPages });
-      dispatch({ type: "SET_STAGE", stage: "questions" });
+      safeDispatch({ type: "SET_QUESTION_PAGES", pages: questionPages });
+      safeDispatch({ type: "SET_ANSWER_PAGES", pages: answerPages });
+      safeDispatch({ type: "SET_STAGE", stage: "questions" });
 
       let qDone = 0;
       let aDone = 0;
@@ -77,7 +91,7 @@ export function useOrchestrator() {
           (aTotal ? (aDone / aTotal) * WEIGHTS.answers : 0) +
           mappingDone * WEIGHTS.mapping +
           (gTotal ? (gDone / gTotal) * WEIGHTS.grading : 0);
-        dispatch({ type: "SET_PROGRESS", label, done: Math.round(pct), total: 100 });
+        safeDispatch({ type: "SET_PROGRESS", label, done: Math.round(pct), total: 100 });
       }
       reportProgress("Reading question paper");
 
@@ -87,7 +101,7 @@ export function useOrchestrator() {
           if (aborted()) return null;
           try {
             const data = await withRetry(
-              () => postJson<ExtractQuestionsModelResponse>("/api/extract-questions", { page }),
+              () => postJson<ExtractQuestionsModelResponse>("/api/extract-questions", { page }, signal),
               { onRetry: notifyRetry }
             );
             qDone++;
@@ -95,7 +109,7 @@ export function useOrchestrator() {
             return { pageIndex: page.index, section: data.section ?? null, questions: data.questions };
           } catch (err) {
             qDone++;
-            dispatch({
+            safeDispatch({
               type: "ADD_ERROR",
               message: `Question page ${page.index + 1}: ${err instanceof Error ? err.message : "failed"}`,
             });
@@ -110,7 +124,7 @@ export function useOrchestrator() {
           if (aborted()) return null;
           try {
             const data = await withRetry(
-              () => postJson<ExtractAnswersModelResponse>("/api/extract-answers", { page }),
+              () => postJson<ExtractAnswersModelResponse>("/api/extract-answers", { page }, signal),
               { onRetry: notifyRetry }
             );
             aDone++;
@@ -118,7 +132,7 @@ export function useOrchestrator() {
             return { pageIndex: page.index, raw: data.segments };
           } catch (err) {
             aDone++;
-            dispatch({
+            safeDispatch({
               type: "ADD_ERROR",
               message: `Answer page ${page.index + 1}: ${err instanceof Error ? err.message : "failed"}`,
             });
@@ -137,9 +151,9 @@ export function useOrchestrator() {
       const questions: Question[] = reconcileQuestions(
         questionPagesRaw.filter((p): p is NonNullable<typeof p> => p !== null)
       );
-      dispatch({ type: "SET_QUESTIONS", questions });
+      safeDispatch({ type: "SET_QUESTIONS", questions });
 
-      dispatch({ type: "SET_STAGE", stage: "answers" });
+      safeDispatch({ type: "SET_STAGE", stage: "answers" });
       let segments: AnswerSegment[] = buildAnswerSegments(
         answerPagesRaw.filter((p): p is NonNullable<typeof p> => p !== null)
       );
@@ -164,27 +178,27 @@ export function useOrchestrator() {
           seg.regions = tightened;
         })
       );
-      dispatch({ type: "SET_SEGMENTS", segments });
+      safeDispatch({ type: "SET_SEGMENTS", segments });
       if (aborted()) return;
 
       // --- Stage 3: mapping ---------------------------------------------------
-      dispatch({ type: "SET_STAGE", stage: "mapping" });
+      safeDispatch({ type: "SET_STAGE", stage: "mapping" });
       reportProgress("Mapping answers to questions", 0);
       const { mappings, derivedSegments } = await runMappingEngine(questions, segments, {
         onRetry: notifyRetry,
       });
       if (derivedSegments.length > 0) {
         segments = [...segments, ...derivedSegments];
-        dispatch({ type: "SET_SEGMENTS", segments });
+        safeDispatch({ type: "SET_SEGMENTS", segments });
       }
       validateMappings(questions, segments, mappings);
-      dispatch({ type: "SET_MAPPINGS", mappings });
+      safeDispatch({ type: "SET_MAPPINGS", mappings });
       reportProgress("Mapping answers to questions", 1);
       if (aborted()) return;
 
       // --- Stage 4: grading + summary (skipped while RUN_GRADING is off) -----
       if (RUN_GRADING) {
-        dispatch({ type: "SET_STAGE", stage: "grading" });
+        safeDispatch({ type: "SET_STAGE", stage: "grading" });
         const items = buildGradeItems(questions, mappings, segments);
         const batches = chunk(items, GRADE_BATCH_SIZE);
         const rawGrades: RawGrade[] = [];
@@ -193,12 +207,12 @@ export function useOrchestrator() {
           if (aborted()) return;
           try {
             const data = await withRetry(
-              () => postJson<GradeModelResponse>("/api/grade", { items: batch }),
+              () => postJson<GradeModelResponse>("/api/grade", { items: batch }, signal),
               { onRetry: notifyRetry }
             );
             rawGrades.push(...data.grades);
           } catch (err) {
-            dispatch({
+            safeDispatch({
               type: "ADD_ERROR",
               message: `Grading batch failed: ${err instanceof Error ? err.message : "unknown error"}`,
             });
@@ -206,13 +220,14 @@ export function useOrchestrator() {
           gDone += batch.length;
           reportProgress("Grading", 1, gDone, items.length);
         }
+        if (aborted()) return;
 
         const questionsById = new Map(questions.map((q) => [q.id, q]));
         const modelGrades: Grade[] = rawGrades.map((g) =>
           fromRawGrade(g, questionsById.get(g.question_id)?.marks ?? 1)
         );
         const grades = [...modelGrades, ...localUnansweredGrades(questions, mappings)];
-        dispatch({ type: "SET_GRADES", grades });
+        safeDispatch({ type: "SET_GRADES", grades });
 
         let summaryParts = { strengths: [] as string[], weaknesses: [] as string[], overallFeedback: "" };
         try {
@@ -226,10 +241,11 @@ export function useOrchestrator() {
           }));
           const data = await withRetry(
             () =>
-              postJson<SummaryModelResponse>("/api/summary", {
-                grades: summaryRaw,
-                counts: buildLocalSummaryCounts(mappings),
-              }),
+              postJson<SummaryModelResponse>(
+                "/api/summary",
+                { grades: summaryRaw, counts: buildLocalSummaryCounts(mappings) },
+                signal
+              ),
             { onRetry: notifyRetry }
           );
           summaryParts = {
@@ -238,25 +254,28 @@ export function useOrchestrator() {
             overallFeedback: data.overall_feedback,
           };
         } catch (err) {
-          dispatch({
+          safeDispatch({
             type: "ADD_ERROR",
             message: `Summary generation failed: ${err instanceof Error ? err.message : "unknown error"}`,
           });
         }
 
         const summary = computeSummary(questions, mappings, grades, summaryParts);
-        dispatch({ type: "SET_SUMMARY", summary });
+        safeDispatch({ type: "SET_SUMMARY", summary });
       } else {
-        dispatch({ type: "SET_GRADES", grades: [] });
+        safeDispatch({ type: "SET_GRADES", grades: [] });
         reportProgress("Done — grading skipped for now", 1);
       }
 
+      if (aborted()) return;
+
       // Reach Review whenever ≥1 question and ≥1 answer page were read.
       if (questions.length === 0 || answerPages.length === 0) {
-        dispatch({ type: "SET_STAGE", stage: "error" });
+        safeDispatch({ type: "SET_STAGE", stage: "error" });
       } else {
-        dispatch({ type: "SET_STAGE", stage: "done" });
+        safeDispatch({ type: "SET_STAGE", stage: "done" });
       }
+      abortRef.current = null;
     },
     [dispatch]
   );
