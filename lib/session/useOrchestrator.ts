@@ -27,13 +27,9 @@ import {
 
 // Grading/summary run on Groq's free tier (lib/ai/groq.ts) — text-only,
 // so they don't touch Gemini's quota, which extraction still relies on.
-const RUN_GRADING = true;
 
-// Processing screen weights for the determinate progress bar. Mapping picks
-// up grading's share when grading is skipped, so the bar still reaches 100%.
-const WEIGHTS = RUN_GRADING
-  ? { questions: 25, answers: 40, mapping: 15, grading: 20 }
-  : { questions: 25, answers: 40, mapping: 35, grading: 0 };
+// Processing screen weights for the determinate progress bar.
+const WEIGHTS = { questions: 25, answers: 40, mapping: 15, grading: 20 };
 const GRADE_BATCH_SIZE = 5;
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -196,76 +192,71 @@ export function useOrchestrator() {
       reportProgress("Mapping answers to questions", 1);
       if (aborted()) return;
 
-      // --- Stage 4: grading + summary (skipped while RUN_GRADING is off) -----
-      if (RUN_GRADING) {
-        safeDispatch({ type: "SET_STAGE", stage: "grading" });
-        const items = buildGradeItems(questions, mappings, segments);
-        const batches = chunk(items, GRADE_BATCH_SIZE);
-        const rawGrades: RawGrade[] = [];
-        let gDone = 0;
-        for (const batch of batches) {
-          if (aborted()) return;
-          try {
-            const data = await withRetry(
-              () => postJson<GradeModelResponse>("/api/grade", { items: batch }, signal),
-              { onRetry: notifyRetry }
-            );
-            rawGrades.push(...data.grades);
-          } catch (err) {
-            safeDispatch({
-              type: "ADD_ERROR",
-              message: `Grading batch failed: ${err instanceof Error ? err.message : "unknown error"}`,
-            });
-          }
-          gDone += batch.length;
-          reportProgress("Grading", 1, gDone, items.length);
-        }
+      // --- Stage 4: grading + summary ------------------------------------------
+      safeDispatch({ type: "SET_STAGE", stage: "grading" });
+      const items = buildGradeItems(questions, mappings, segments);
+      const batches = chunk(items, GRADE_BATCH_SIZE);
+      const rawGrades: RawGrade[] = [];
+      let gDone = 0;
+      for (const batch of batches) {
         if (aborted()) return;
-
-        const questionsById = new Map(questions.map((q) => [q.id, q]));
-        const modelGrades: Grade[] = rawGrades.map((g) =>
-          fromRawGrade(g, questionsById.get(g.question_id)?.marks ?? 1)
-        );
-        const grades = [...modelGrades, ...localUnansweredGrades(questions, mappings)];
-        safeDispatch({ type: "SET_GRADES", grades });
-
-        let summaryParts = { strengths: [] as string[], weaknesses: [] as string[], overallFeedback: "" };
         try {
-          const summaryRaw = grades.map((g) => ({
-            display_number: questionsById.get(g.questionId)?.displayNumber ?? g.questionId,
-            awarded: g.awarded,
-            verdict: g.verdict,
-            feedback: g.feedback,
-            missed_points: g.missedPoints,
-            confidence: g.gradingConfidence,
-          }));
           const data = await withRetry(
-            () =>
-              postJson<SummaryModelResponse>(
-                "/api/summary",
-                { grades: summaryRaw, counts: buildLocalSummaryCounts(mappings) },
-                signal
-              ),
+            () => postJson<GradeModelResponse>("/api/grade", { items: batch }, signal),
             { onRetry: notifyRetry }
           );
-          summaryParts = {
-            strengths: data.strengths,
-            weaknesses: data.weaknesses,
-            overallFeedback: data.overall_feedback,
-          };
+          rawGrades.push(...data.grades);
         } catch (err) {
           safeDispatch({
             type: "ADD_ERROR",
-            message: `Summary generation failed: ${err instanceof Error ? err.message : "unknown error"}`,
+            message: `Grading batch failed: ${err instanceof Error ? err.message : "unknown error"}`,
           });
         }
-
-        const summary = computeSummary(questions, mappings, grades, summaryParts);
-        safeDispatch({ type: "SET_SUMMARY", summary });
-      } else {
-        safeDispatch({ type: "SET_GRADES", grades: [] });
-        reportProgress("Done — grading skipped for now", 1);
+        gDone += batch.length;
+        reportProgress("Grading", 1, gDone, items.length);
       }
+      if (aborted()) return;
+
+      const questionsById = new Map(questions.map((q) => [q.id, q]));
+      const modelGrades: Grade[] = rawGrades.map((g) =>
+        fromRawGrade(g, questionsById.get(g.question_id)?.marks ?? 1)
+      );
+      const grades = [...modelGrades, ...localUnansweredGrades(questions, mappings)];
+      safeDispatch({ type: "SET_GRADES", grades });
+
+      let summaryParts = { strengths: [] as string[], weaknesses: [] as string[], overallFeedback: "" };
+      try {
+        const summaryRaw = grades.map((g) => ({
+          display_number: questionsById.get(g.questionId)?.displayNumber ?? g.questionId,
+          awarded: g.awarded,
+          verdict: g.verdict,
+          feedback: g.feedback,
+          missed_points: g.missedPoints,
+          confidence: g.gradingConfidence,
+        }));
+        const data = await withRetry(
+          () =>
+            postJson<SummaryModelResponse>(
+              "/api/summary",
+              { grades: summaryRaw, counts: buildLocalSummaryCounts(mappings) },
+              signal
+            ),
+          { onRetry: notifyRetry }
+        );
+        summaryParts = {
+          strengths: data.strengths,
+          weaknesses: data.weaknesses,
+          overallFeedback: data.overall_feedback,
+        };
+      } catch (err) {
+        safeDispatch({
+          type: "ADD_ERROR",
+          message: `Summary generation failed: ${err instanceof Error ? err.message : "unknown error"}`,
+        });
+      }
+
+      const summary = computeSummary(questions, mappings, grades, summaryParts);
+      safeDispatch({ type: "SET_SUMMARY", summary });
 
       if (aborted()) return;
 

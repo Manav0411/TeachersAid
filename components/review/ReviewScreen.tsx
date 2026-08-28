@@ -7,6 +7,7 @@ import { AnswerSheetPanel, type PageRegion } from "@/components/viewer/AnswerShe
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { QuestionRow } from "./QuestionRow";
 import type { Session } from "@/lib/types";
+import { buildGradesCsv } from "@/lib/exportCsv";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "answered" | "unanswered" | "unmatched" | "needs-review";
@@ -70,6 +71,17 @@ export function ReviewScreen({
     unmatched: mappings.filter((m) => m.status === "unmatched").length,
   };
   const hasGrades = grades.length > 0;
+
+  function handleExport() {
+    const csv = buildGradesCsv(session);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "assessment-report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   const totalAwarded = grades.reduce((s, g) => s + g.awarded, 0);
   const totalMax = grades.reduce((s, g) => s + g.max, 0);
 
@@ -150,22 +162,32 @@ export function ReviewScreen({
                 Summary
               </button>
             )}
-            <Tooltip>
-              <TooltipTrigger
+            {hasGrades ? (
+              <button
                 type="button"
-                // A native `disabled` button doesn't reliably fire hover
-                // events in Chrome/Safari, which would've silently broken
-                // this tooltip the same way it silently broke the native
-                // `title` this replaces. aria-disabled keeps it inert
-                // (there's no onClick here regardless) while staying
-                // hoverable/focusable.
-                aria-disabled="true"
-                className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white opacity-40 cursor-not-allowed"
+                onClick={handleExport}
+                className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white hover:bg-ink/90"
               >
                 <Download className="size-3.5" /> Export report
-              </TooltipTrigger>
-              <TooltipContent>Coming soon</TooltipContent>
-            </Tooltip>
+              </button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger
+                  type="button"
+                  // A native `disabled` button doesn't reliably fire hover
+                  // events in Chrome/Safari, which would've silently broken
+                  // this tooltip the same way it silently broke the native
+                  // `title` this replaces. aria-disabled keeps it inert
+                  // (there's no onClick here regardless) while staying
+                  // hoverable/focusable.
+                  aria-disabled="true"
+                  className="flex items-center gap-1.5 rounded-pill bg-ink px-4 py-1.5 text-xs font-medium text-white opacity-40 cursor-not-allowed"
+                >
+                  <Download className="size-3.5" /> Export report
+                </TooltipTrigger>
+                <TooltipContent>Grade the exam first</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
 
