@@ -144,6 +144,28 @@ app recolors from that one file.
   answer has no such markers, it falls through to the semantic residue step
   rather than a dedicated per-segment LLM call — a scope trade-off, noted
   inline in `lib/mapping/index.ts`.
+- **Gemini's free tier caps `gemini-3.6-flash` at 20 requests/day per
+  project** (confirmed directly against Google's quota API, not a guess).
+  A full run costs ~4-5 requests; heavy same-day testing against the
+  deployed instance can hit this and surface as "rate limited by the
+  model," not an application bug. Grading/summary run on Groq's separate
+  free tier and aren't affected.
+
+## Future improvements
+
+Given more time, the localization and transcription steps would be worth
+splitting rather than asking one general-purpose vision model to do both
+in a single call. A fine-tuned object-detection model (e.g. YOLO) trained
+on handwritten answer sheets could handle *localization* specifically —
+detecting ink regions, line boundaries, and strike-throughs directly — and
+hand off to a dedicated handwriting-recognition model for *transcription*
+within each detected region. This detect-then-recognize split is the more
+established pattern for OCR-heavy pipelines and would likely improve both
+localization precision and transcription accuracy on messier real-world
+handwriting, at the cost of needing labelled training data and a
+training/serving setup that neither free-tier API requires today. Given
+the timeframe, Gemini end-to-end was the right trade-off for this
+assignment — it's the first thing worth investing in beyond it.
 
 ## Accuracy
 
