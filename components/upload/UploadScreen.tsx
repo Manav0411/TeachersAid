@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GraduationCap } from "lucide-react";
+import Image from "next/image";
 import { AppShell } from "@/components/shell/AppShell";
 import { Dropzone, type DropzoneFileInfo } from "./Dropzone";
 import { ThumbnailStrip } from "./ThumbnailStrip";
@@ -67,8 +67,20 @@ export function UploadScreen({
           Upload both files to get started
         </p>
 
-        <div className="my-8 flex size-24 items-center justify-center rounded-full bg-brand-from/15">
-          <GraduationCap className="size-10 text-brand-to" />
+        {/* Mascot illustration from the Figma file — cropped from the
+            canvas since the MCP connection only has viewer access (no
+            asset export). Sits in the app's own brand-tinted circle
+            rather than Figma's original peach rings, matching the
+            retheme's blue/green palette. */}
+        <div className="my-8 flex size-24 items-center justify-center overflow-hidden rounded-full bg-brand-from/15">
+          <Image
+            src="/mascot.png"
+            alt=""
+            width={96}
+            height={96}
+            className="size-full object-cover"
+            priority
+          />
         </div>
 
         <div className="grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
