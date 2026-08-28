@@ -132,7 +132,7 @@ export function ReviewScreen({
     : [];
 
   return (
-    <AppShell collapsed>
+    <AppShell collapsed onBack={onNewUpload}>
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-line bg-white px-6 py-3">
           <div className="flex items-center gap-4">

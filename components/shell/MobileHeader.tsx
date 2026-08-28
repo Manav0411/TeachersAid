@@ -15,13 +15,24 @@ import { SidebarFooter, SidebarNav, ToolkitPill } from "./Sidebar";
  * header row (back chevron, logo, bell, avatar, hamburger) instead of the
  * desktop sidebar, with the full nav reachable behind the hamburger.
  */
-export function MobileHeader() {
+export function MobileHeader({ onBack }: { onBack?: () => void }) {
   const [open, setOpen] = useState(false);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-white px-4 md:hidden">
       <div className="flex items-center gap-2">
-        <ChevronLeft className="size-5 text-muted-foreground" aria-hidden />
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to Exams"
+            className="-ml-1 rounded p-1 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        ) : (
+          <ChevronLeft className="size-5 text-muted-foreground" aria-hidden />
+        )}
         <div className="flex size-7 items-center justify-center rounded-md bg-ink text-white">
           <span className="font-display text-xs font-bold">V</span>
         </div>

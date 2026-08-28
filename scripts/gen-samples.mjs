@@ -1,8 +1,16 @@
 // Generates the bundled "Try a sample" fixture PDFs under public/samples/.
 // These are synthetic, TYPED documents (not real handwriting) — they exist
 // to let a reviewer exercise the full pipeline in one click without a real
-// exam paper to hand. They are not a substitute for a handwriting accuracy
-// benchmark; see fixtures/README.md for that.
+// exam paper to hand.
+//
+// IMPORTANT: public/samples/answer-sheet.pdf currently holds a genuinely
+// handwritten answer sheet (copied from fixtures/handwritten-real/), not
+// this script's typed output — deliberately, since real handwriting is a
+// stronger, more honest demo of the pipeline than typed text pretending to
+// be an answer sheet. Re-running this script overwrites that with the
+// typed version below; don't run it unless you actually mean to revert to
+// the synthetic baseline. See fixtures/README.md for the handwritten
+// fixture's own verified results.
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { writeFile, mkdir } from "node:fs/promises";
 

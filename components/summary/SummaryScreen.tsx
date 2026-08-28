@@ -31,7 +31,7 @@ export function SummaryScreen({
   }, {});
 
   return (
-    <AppShell collapsed>
+    <AppShell collapsed onBack={onNewUpload}>
       <div className="bg-page-working min-h-full px-6 py-8">
         <div className="mb-4 flex items-center justify-between">
           <button

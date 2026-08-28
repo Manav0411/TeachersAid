@@ -17,14 +17,18 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Click **"Try a sample instead"**
-on the upload screen to run the full pipeline against a bundled sample paper
-with no files of your own.
+on the upload screen to run the full pipeline with no files of your own —
+against a typed question paper and a **genuinely handwritten** answer
+sheet (real ink, not synthesised), the same one verified in the Accuracy
+section below.
 
 ```bash
 pnpm test            # unit tests (labels, boxes, reconciliation, invariants)
 pnpm lint             # eslint
 pnpm exec tsc --noEmit  # typecheck
-pnpm gen:samples      # regenerate the bundled sample PDFs (scripts/gen-samples.mjs)
+pnpm gen:samples      # regenerate the typed baseline PDFs (scripts/gen-samples.mjs) —
+                      # NOT the bundled sample's answer sheet, which is real
+                      # handwriting; see the script's own header comment
 ```
 
 ## Architecture
