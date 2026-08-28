@@ -169,7 +169,7 @@ assignment — it's the first thing worth investing in beyond it.
 
 ## Accuracy
 
-Verified live against three fixtures (real Gemini calls, no fabricated
+Verified live against four fixtures (real Gemini calls, no fabricated
 numbers — see `fixtures/README.md` for full detail on each):
 
 - **`clean-baseline`** — 7/7 questions extracted in printed order, with the
