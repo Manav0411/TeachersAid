@@ -11,14 +11,15 @@
   --font-display: var(--font-display);
   --font-heading: var(--font-display);
 
-  /* Brand tokens — read from Figma `GEjt1rt1s7AXvkcr4t8muE` (see plan §Design).
-     These are the design-language tokens the app builds its own layouts on. */
-  --color-brand-from: #ff7950;
-  --color-brand-to: #c0350a;
-  --color-success: #34ac15;
-  --color-danger: #c0350a;
-  --color-ink: #272727;
-  --color-line: #cecece;
+  /* Brand tokens — originally read from the Figma file, since re-themed to
+     match intelgrader.com's palette (calm blue primary + green accent) per
+     recruiter/design feedback that the orange/red theme wasn't landing. */
+  --color-brand-from: #5aa4f0;
+  --color-brand-to: #3475db;
+  --color-success: #3b9a5b;
+  --color-danger: #d64545;
+  --color-ink: #313d58;
+  --color-line: #d2dae5;
   --radius-pill: 100px;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -65,18 +66,18 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #3475db;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --secondary: #eef2f7;
+  --secondary-foreground: #313d58;
+  --muted: #eef2f7;
+  --muted-foreground: #6b7a95;
+  --accent: #e7f1ff;
+  --accent-foreground: #3475db;
+  --destructive: #d64545;
+  --border: #d2dae5;
+  --input: #d2dae5;
+  --ring: #428fe9;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -84,13 +85,13 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-foreground: #313d58;
+  --sidebar-primary: #3475db;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: #e7f1ff;
+  --sidebar-accent-foreground: #3475db;
+  --sidebar-border: #d2dae5;
+  --sidebar-ring: #428fe9;
 }
 
 .dark {
@@ -140,12 +141,13 @@
 }
 
 @layer components {
-  /* Page-level backdrop gradients from the Figma upload / working screens. */
+  /* Page-level backdrop gradients — tinted blue-grey to match the
+     intelgrader.com palette instead of the original neutral grey. */
   .bg-page-upload {
-    background: linear-gradient(180deg, #f5f5f5 0%, #e9e5e5 100%);
+    background: linear-gradient(180deg, #f7f9fc 0%, #e6ecf3 100%);
   }
   .bg-page-working {
-    background: linear-gradient(180deg, #eeeeee 0%, #dadada 100%);
+    background: linear-gradient(180deg, #f0f4f9 0%, #dbe3ee 100%);
   }
 
   /* Gradient text (headings) and the pill-border primary CTA, per the Figma. */

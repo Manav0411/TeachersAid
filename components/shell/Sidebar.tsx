@@ -42,7 +42,7 @@ export function ToolkitPill({ collapsed = false }: { collapsed?: boolean }) {
         // (the ink fill), one to the border box (the gradient), with a
         // transparent border as the gap between them.
         backgroundImage:
-          "linear-gradient(var(--color-ink), var(--color-ink)), linear-gradient(90deg,#ff7950,#c0350a)",
+          "linear-gradient(var(--color-ink), var(--color-ink)), linear-gradient(90deg,var(--color-brand-from),var(--color-brand-to))",
         backgroundOrigin: "border-box",
         backgroundClip: "padding-box, border-box",
       }}
