@@ -1,9 +1,16 @@
 /**
  * Roman numeral / letter-index helpers shared by question sort-key parsing
  * (lib/questions/reconcile.ts) and label canonicalisation (lib/mapping/labels.ts).
- * Both need "roman parse before letter parse" — a bare "i" or "v" is
- * ambiguous between a roman numeral and a lettered sub-part, so callers
- * decide which to try first based on context.
+ * A bare single character — "i", "v", "x", "l", "c", "d", "m" — is
+ * genuinely ambiguous between a roman numeral and a lettered sub-part
+ * ("24(c)" could be the 3rd of a-b-c-d-e-f, or roman C=100). Neither a
+ * fixed roman-first nor letter-first default is correct on its own: both
+ * conventions are common, and a roman sequence's very first sub-part is
+ * literally the ambiguous character "i". Callers with sibling context
+ * (a whole sub-part group, not just one token) should use
+ * `groupPrefersRoman` to decide once per group, then pass that as
+ * `preferRoman` to every ambiguous token in the group — see
+ * reconcile.ts's and mapping/index.ts's grouping passes.
  */
 
 const ROMAN_VALUES: Record<string, number> = {
@@ -25,26 +32,39 @@ export function isRomanNumeral(token: string): boolean {
   return upper.length > 0 && VALID_ROMAN.test(upper) && upper !== "";
 }
 
-// Single letters that are also roman numerals (i, v, x, l, c, d, m) are
-// overwhelmingly used as roman sub-part labels in practice — a lettered
-// sub-part sequence goes a, b, c, d, e, not jumps to "v" — so both sort-key
-// parsing and label canonicalisation treat these as roman by default.
+// Single letters that are also roman numerals.
 export const AMBIGUOUS_ROMAN_LETTERS = new Set(["i", "v", "x", "l", "c", "d", "m"]);
 
 /**
- * Resolves a single- or multi-character sub-part token to a 1-based index,
- * trying roman first then falling back to a plain letter index — the
- * shared "roman parse before letter parse" rule every sub-part parser in
- * this app needs. Returns null for anything unrecognised.
+ * Resolves a single- or multi-character sub-part token to a 1-based index.
+ * A multi-character token is unambiguous — it's always tried as roman
+ * first (letter tokens are never more than one character). A single
+ * ambiguous character resolves per `preferRoman`, which callers with
+ * sibling context should derive via `groupPrefersRoman` rather than
+ * hardcode; isolated callers keep the historical roman-first default.
+ * Returns null for anything unrecognised.
  */
-export function subPartIndex(token: string): number | null {
+export function subPartIndex(token: string, preferRoman = true): number | null {
   if (token.length > 1 && isRomanNumeral(token)) return romanToInt(token);
   if (token.length === 1) {
     const lower = token.toLowerCase();
-    if (AMBIGUOUS_ROMAN_LETTERS.has(lower)) return romanToInt(token);
+    if (AMBIGUOUS_ROMAN_LETTERS.has(lower) && preferRoman) return romanToInt(token);
     return letterToIndex(token);
   }
   return null;
+}
+
+/**
+ * Decides whether a sibling group of sub-part marker tokens (e.g. every
+ * "(a)"/"(b)"/"(c)"... under the same parent question) uses roman-numeral
+ * or plain-letter convention: true iff the group contains at least one
+ * *unambiguous* multi-character roman token ("ii", "iii", "iv", ...).
+ * With no such evidence, letter mode wins — the common case a fixed
+ * roman-first default gets wrong (a real a-b-c-d-e-f sequence has no
+ * multi-char roman token anywhere in it).
+ */
+export function groupPrefersRoman(tokens: string[]): boolean {
+  return tokens.some((t) => t.length > 1 && isRomanNumeral(t));
 }
 
 export function romanToInt(token: string): number {

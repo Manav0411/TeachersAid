@@ -144,7 +144,10 @@ export type GradeItemInput = z.infer<typeof GradeItemInput>;
 // missed_points itself (an empty array is a valid answer).
 export const RawGrade = z.object({
   question_id: z.string(),
-  awarded: z.number(),
+  // No upper bound here — the ceiling is per-question max_marks, which
+  // isn't in this schema's scope. fromRawGrade() (lib/grading/normalise.ts)
+  // clamps to [0, max] once it has both values.
+  awarded: z.number().min(0),
   verdict: VerdictSchema,
   feedback: z.string(),
   missed_points: z.array(z.string()),

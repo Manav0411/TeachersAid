@@ -258,3 +258,40 @@ describe("runMappingEngine — nested OR-choice sub-parts (labels.ts fix)", () =
     expect(mB?.segmentIds).toEqual(["seg-b-i"]);
   });
 });
+
+describe("runMappingEngine — roman/letter sub-part disambiguation (roman.ts fix)", () => {
+  it("maps a lettered '(e)' and a roman '(v)' to their own distinct questions, not each other", async () => {
+    // The exact collision the bug allowed: canonicalizeLabel("e") (letter,
+    // index 5) and canonicalizeLabel("v") (roman, index 5) used to produce
+    // the identical canonical key. Two sibling groups coexist here: 24's
+    // group is lettered (a-f, no multi-char roman evidence) and 36's group
+    // is roman (i-v, with "ii"/"iii"/"iv" as unambiguous evidence) — each
+    // group's own mode must be used, not one global default.
+    const lettered = ["a", "b", "c", "d", "e", "f"].map((letter, i) => ({
+      ...question(`q24${letter}`, [24, i + 1]),
+      displayNumber: `24(${letter})`,
+      parentNumber: "24",
+    }));
+    const roman = ["i", "ii", "iii", "iv", "v"].map((numeral, i) => ({
+      ...question(`q36${numeral}`, [36, i + 1]),
+      displayNumber: `36(${numeral})`,
+      parentNumber: "36",
+    }));
+    const questions = [...lettered, ...roman];
+    const segments = [
+      segment({ id: "seg-24e", detectedLabel: "24(e)", transcript: "Answer for 24e" }),
+      segment({ id: "seg-36v", detectedLabel: "36(v)", transcript: "Answer for 36v" }),
+    ];
+
+    const { mappings } = await runMappingEngine(questions, segments);
+
+    const m24e = mappings.find((m) => m.questionId === "q24e");
+    const m36v = mappings.find((m) => m.questionId === "q36v");
+    expect(m24e?.status).toBe("answered");
+    expect(m24e?.method).toBe("label");
+    expect(m24e?.segmentIds).toEqual(["seg-24e"]);
+    expect(m36v?.status).toBe("answered");
+    expect(m36v?.method).toBe("label");
+    expect(m36v?.segmentIds).toEqual(["seg-36v"]);
+  });
+});

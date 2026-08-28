@@ -193,4 +193,49 @@ describe("reconcileQuestions", () => {
     ]);
     expect(result.map((r) => r.displayNumber)).toEqual(["32 (a)", "33"]);
   });
+
+  it("sorts a 6-part lettered sub-question a-f in printed order (regression)", () => {
+    // Live bug: subPartIndex treated bare "c"/"d" as roman C=100/D=500,
+    // so a-b-c-d-e-f sorted as a,b,e,f,c,d. With 4+ sibling evidence and
+    // no multi-char roman token anywhere in the group, letter mode wins.
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: ["a", "b", "c", "d", "e", "f"].map((letter) =>
+          q({ display_number: `(${letter})`, parent_number: "24", text: `part ${letter}` })
+        ),
+      },
+    ]);
+    expect(result.map((r) => r.displayNumber)).toEqual([
+      "24 (a)",
+      "24 (b)",
+      "24 (c)",
+      "24 (d)",
+      "24 (e)",
+      "24 (f)",
+    ]);
+  });
+
+  it("still sorts a genuine roman i-v sequence correctly (unaffected by the letter-mode fix)", () => {
+    // Multi-char siblings ("ii", "iii", "iv") are unambiguous roman
+    // evidence, so the whole group — including the ambiguous single-char
+    // "i" and "v" — stays in roman mode.
+    const result = reconcileQuestions([
+      {
+        pageIndex: 0,
+        section: null,
+        questions: ["i", "ii", "iii", "iv", "v"].map((numeral) =>
+          q({ display_number: `(${numeral})`, parent_number: "36", text: `part ${numeral}` })
+        ),
+      },
+    ]);
+    expect(result.map((r) => r.displayNumber)).toEqual([
+      "36 (i)",
+      "36 (ii)",
+      "36 (iii)",
+      "36 (iv)",
+      "36 (v)",
+    ]);
+  });
 });

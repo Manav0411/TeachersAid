@@ -1,5 +1,6 @@
 import type { AnswerSegment, Mapping, Question } from "@/lib/types";
 import { canonicalizeLabel, isParentOnlyLabel, labelKey } from "./labels";
+import { romanModeByParent, groupKeyFor } from "@/lib/questions/reconcile";
 import { semanticMatch } from "./semantic";
 import { positionalNarrow } from "./positional";
 
@@ -59,6 +60,27 @@ export async function runMappingEngine(
   const claimedSegmentIds = new Set<string>();
   const derivedSegments: AnswerSegment[] = [];
 
+  // A bare ambiguous sub-part character ("c", "v", ...) is only safely
+  // resolved with sibling context — see groupPrefersRoman in lib/roman.ts.
+  // Recompute the same per-parent mode reconcileQuestions already used for
+  // display order, from the same Question[], so mapping and display order
+  // can never disagree.
+  const romanMode = romanModeByParent(allQuestions);
+  function canonicalizeQuestionLabel(q: Question) {
+    const key = groupKeyFor(q.displayNumber, q.parentNumber);
+    return canonicalizeLabel(q.displayNumber, romanMode.get(key) ?? true);
+  }
+  // A segment's detectedLabel has no parentNumber of its own — recover
+  // its major number (never ambiguous; digits aren't roman/letter tokens)
+  // as the same group key groupKeyFor falls back to for a parentless
+  // question, so a segment and its matching question always agree on
+  // which group's mode applies. Falls back to the roman-first default
+  // when the major can't be read at all.
+  function canonicalizeSegmentLabel(raw: string | null) {
+    const major = raw?.match(/[0-9]+/)?.[0] ?? null;
+    return canonicalizeLabel(raw, major !== null ? (romanMode.get(major) ?? true) : true);
+  }
+
   function claim(mapping: Mapping) {
     mappings.push(mapping);
     if (mapping.questionId) claimedQuestionIds.add(mapping.questionId);
@@ -100,7 +122,7 @@ export async function runMappingEngine(
   // sub-parts at all, which is the single most common case.
   const byCanonicalLabel = new Map<string, AnswerSegment[]>();
   for (const seg of segments) {
-    const c = canonicalizeLabel(seg.detectedLabel);
+    const c = canonicalizeSegmentLabel(seg.detectedLabel);
     if (!c) continue; // no label at all -> steps C/D
     const key = labelKey(c);
     if (!byCanonicalLabel.has(key)) byCanonicalLabel.set(key, []);
@@ -108,7 +130,7 @@ export async function runMappingEngine(
   }
 
   for (const q of questions) {
-    const c = canonicalizeLabel(q.displayNumber);
+    const c = canonicalizeQuestionLabel(q);
     if (!c) continue;
     const rawMatches = byCanonicalLabel.get(labelKey(c));
     if (!rawMatches || rawMatches.length === 0) continue;
@@ -152,19 +174,20 @@ export async function runMappingEngine(
     (s) => !claimedSegmentIds.has(s.id) && isParentOnlyLabel(s.detectedLabel)
   );
   for (const seg of parentOnlySegments) {
-    const c = canonicalizeLabel(seg.detectedLabel)!;
+    const c = canonicalizeSegmentLabel(seg.detectedLabel)!;
     const children = questions.filter((q) => {
-      const qc = canonicalizeLabel(q.displayNumber);
+      const qc = canonicalizeQuestionLabel(q);
       return qc?.major === c.major && qc.sub !== null && !claimedQuestionIds.has(q.id);
     });
     if (children.length === 0) continue;
 
     const split = splitByInternalLabels(seg.transcript);
     if (split) {
+      const preferRomanForMajor = romanMode.get(String(c.major ?? "")) ?? true;
       const chunkMatches = split.map((chunk) => {
-        const chunkCanonical = canonicalizeLabel(`${c.major}${chunk.label}`);
+        const chunkCanonical = canonicalizeLabel(`${c.major}${chunk.label}`, preferRomanForMajor);
         const child = children.find(
-          (q) => canonicalizeLabel(q.displayNumber)?.sub === chunkCanonical?.sub
+          (q) => canonicalizeQuestionLabel(q)?.sub === chunkCanonical?.sub
         );
         return { chunk, child };
       });

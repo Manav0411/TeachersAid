@@ -55,4 +55,21 @@ describe("canonicalizeLabel", () => {
     // Single-level labels are unaffected by the multi-token change.
     expect(canonicalizeLabel("24(a)")).toEqual({ major: 24, sub: "a" });
   });
+
+  it("preferRoman disambiguates an ambiguous single character on demand", () => {
+    // Default (no second arg) preserves the historical roman-first
+    // behavior — existing callers/tests are unaffected.
+    expect(canonicalizeLabel("11-i")).toEqual({ major: 11, sub: "a" });
+    // Explicit letter mode reads an ambiguous "c" as the 3rd letter
+    // instead of roman C=100 — this is the fix: a lettered sibling group
+    // (a,b,c,d...) resolves correctly once callers pass their group's mode.
+    expect(canonicalizeLabel("11-c", false)).toEqual({ major: 11, sub: "c" });
+    // The exact collision the bug allowed: an unambiguous letter "e"
+    // (always index 5) and an ambiguous "v" read as roman (also index 5)
+    // land on the identical canonical key unless "v" is read in its
+    // group's real (letter) mode.
+    expect(canonicalizeLabel("e")).toEqual({ major: null, sub: "e" });
+    expect(canonicalizeLabel("v", true)).toEqual({ major: null, sub: "e" }); // the collision
+    expect(canonicalizeLabel("v", false)).toEqual({ major: null, sub: "v" }); // resolved: v is the 22nd letter
+  });
 });

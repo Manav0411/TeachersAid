@@ -34,7 +34,16 @@ function indexToLetter(n: number): string {
   return String.fromCharCode("a".charCodeAt(0) + n - 1);
 }
 
-export function canonicalizeLabel(raw: string | null | undefined): CanonicalLabel | null {
+/**
+ * `preferRoman` disambiguates a bare ambiguous sub-part character
+ * ("c", "v", ...) — pass the sibling group's resolved mode (see
+ * `groupPrefersRoman` in lib/roman.ts) when it's known; defaults to the
+ * historical roman-first behavior for isolated callers/tests.
+ */
+export function canonicalizeLabel(
+  raw: string | null | undefined,
+  preferRoman = true
+): CanonicalLabel | null {
   if (!raw) return null;
   const tokens = raw.match(/[A-Za-z]+|[0-9]+/g) ?? [];
 
@@ -51,7 +60,7 @@ export function canonicalizeLabel(raw: string | null | undefined): CanonicalLabe
     const lower = token.toLowerCase();
     if (PREFIX_WORDS.has(lower)) continue;
 
-    const idx = subPartIndex(token);
+    const idx = subPartIndex(token, preferRoman);
     if (idx !== null) subIndices.push(idx);
     // Unrecognised multi-letter word — ignore rather than corrupt the key.
   }

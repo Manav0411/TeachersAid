@@ -14,13 +14,18 @@ function transcriptFor(mapping: Mapping, segmentsById: Map<string, AnswerSegment
 
 /**
  * Groups questions sharing an "Attempt any N of M" instruction and returns
- * the ids of unattempted questions in a group once the quota is already
- * met — these are excluded from totalMax.
+ * the ids excluded from totalMax/totalAwarded: unattempted questions once
+ * the quota is already met, AND — the standard "credit only the best N
+ * attempted" exam convention — the lowest-scoring excess when a student
+ * answers MORE than N (grading still runs on every answered question, for
+ * feedback; only the summary total caps at N).
  */
-export function optionalUnattemptedIds(
+export function excludedByAttemptAnyN(
   questions: Question[],
-  mappings: Mapping[]
+  mappings: Mapping[],
+  grades: Grade[]
 ): Set<string> {
+  const gradeByQuestion = new Map(grades.map((g) => [g.questionId, g]));
   const groups = new Map<string, Question[]>();
   for (const q of questions) {
     const match = q.instruction?.match(/attempt\s+any\s+(\d+)/i);
@@ -33,14 +38,20 @@ export function optionalUnattemptedIds(
   const excluded = new Set<string>();
   for (const groupQuestions of groups.values()) {
     const required = parseInt(groupQuestions[0].instruction!.match(/attempt\s+any\s+(\d+)/i)![1], 10);
-    const answeredCount = groupQuestions.filter(
+    const answered = groupQuestions.filter(
       (q) => mappings.find((m) => m.questionId === q.id)?.status === "answered"
-    ).length;
-    if (answeredCount >= required) {
+    );
+    if (answered.length >= required) {
       for (const q of groupQuestions) {
-        if (mappings.find((m) => m.questionId === q.id)?.status !== "answered") {
-          excluded.add(q.id);
-        }
+        if (!answered.includes(q)) excluded.add(q.id);
+      }
+      if (answered.length > required) {
+        const scoreRatio = (q: Question) => {
+          const g = gradeByQuestion.get(q.id);
+          return g && g.max > 0 ? g.awarded / g.max : 0;
+        };
+        const bestFirst = [...answered].sort((a, b) => scoreRatio(b) - scoreRatio(a));
+        for (const q of bestFirst.slice(required)) excluded.add(q.id);
       }
     }
   }
@@ -93,7 +104,11 @@ export function localUnansweredGrades(questions: Question[], mappings: Mapping[]
 export function fromRawGrade(raw: RawGrade, max: number): Grade {
   return {
     questionId: raw.question_id,
-    awarded: raw.awarded,
+    // The schema only floors at 0 (it doesn't know max_marks); clamp the
+    // ceiling here, where both values are actually in scope, so a
+    // hallucinated or "half marks" over-award can't push a question past
+    // its own max — or a summary above 100%.
+    awarded: Math.max(0, Math.min(raw.awarded, max)),
     max,
     verdict: raw.verdict,
     feedback: raw.feedback,
@@ -117,7 +132,7 @@ export function computeSummary(
   grades: Grade[],
   modelParts: { strengths: string[]; weaknesses: string[]; overallFeedback: string }
 ): Summary {
-  const excluded = optionalUnattemptedIds(questions, mappings);
+  const excluded = excludedByAttemptAnyN(questions, mappings, grades);
   const counted = grades.filter((g) => !excluded.has(g.questionId));
 
   const totalAwarded = counted.reduce((sum, g) => sum + g.awarded, 0);

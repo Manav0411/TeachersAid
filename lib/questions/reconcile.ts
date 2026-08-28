@@ -1,7 +1,7 @@
 import type { Question } from "@/lib/types";
 import type { RawQuestion } from "@/lib/schemas";
 import { toBBox } from "@/lib/boxes";
-import { subPartIndex } from "@/lib/roman";
+import { subPartIndex, groupPrefersRoman } from "@/lib/roman";
 import { canonicalizeLabel } from "@/lib/mapping/labels";
 
 const PREFIX_WORDS = new Set(["q", "qn", "ques", "question"]);
@@ -9,9 +9,16 @@ const PREFIX_WORDS = new Set(["q", "qn", "ques", "question"]);
 /**
  * Parse a display_number like "11 (a)", "Q.3", "(iii)" into a sortable
  * key array, e.g. [11, 1] or [3]. Falls back to `fallback` (page/vertical
- * order) when nothing parseable is found.
+ * order) when nothing parseable is found. `preferRoman` disambiguates a
+ * bare ambiguous sub-part character ("c", "v", ...) — pass the sibling
+ * group's resolved mode (`romanModeByParent`) when known; isolated
+ * callers keep the historical roman-first default.
  */
-export function parseSortKey(displayNumber: string, fallback: number[]): number[] {
+export function parseSortKey(
+  displayNumber: string,
+  fallback: number[],
+  preferRoman = true
+): number[] {
   const tokens = displayNumber.match(/[A-Za-z]+|[0-9]+/g) ?? [];
   const nums: number[] = [];
 
@@ -22,12 +29,62 @@ export function parseSortKey(displayNumber: string, fallback: number[]): number[
     }
     if (PREFIX_WORDS.has(token.toLowerCase())) continue;
 
-    const idx = subPartIndex(token);
+    const idx = subPartIndex(token, preferRoman);
     if (idx !== null) nums.push(idx);
     // Unparseable stray word — ignore it rather than corrupt the key.
   }
 
   return nums.length > 0 ? nums : fallback;
+}
+
+/** Just the sub-part marker tokens of a display number (e.g. "24(c)" ->
+ * ["c"]) — the alphabetic tokens `parseSortKey` would resolve via
+ * `subPartIndex`, extracted on their own for group-level roman/letter
+ * mode detection. */
+function subPartTokens(displayNumber: string): string[] {
+  const tokens = displayNumber.match(/[A-Za-z]+|[0-9]+/g) ?? [];
+  return tokens.filter((t) => !/^[0-9]+$/.test(t) && !PREFIX_WORDS.has(t.toLowerCase()));
+}
+
+/** A question's own leading major number, roman-agnostic (digits are
+ * never ambiguous) — used as the sibling-group key when a question has
+ * no explicit `parentNumber` of its own (e.g. an OR-choice question like
+ * "24(a)(i)" that isn't a child of some other "24", but still has its
+ * own further ambiguous sub-tokens). Exported so lib/mapping/index.ts's
+ * segment-side lookup (which only ever has a raw label, never a
+ * `parentNumber`) can resolve to the exact same group key. */
+export function groupKeyFor(displayNumber: string, parentNumber?: string): string {
+  if (parentNumber) return parentNumber;
+  return displayNumber.match(/[0-9]+/)?.[0] ?? "";
+}
+
+/**
+ * Decides roman-vs-letter mode per sibling group — see `groupKeyFor` for
+ * the grouping key and `groupPrefersRoman` in lib/roman.ts for why this
+ * can't be decided per-token in isolation. A group with only one member
+ * has no sibling evidence either way and keeps the historical
+ * roman-first default. Exported so the mapping engine
+ * (lib/mapping/index.ts) can recompute the identical mode from the same
+ * resolved `Question[]` it already receives, keeping display order and
+ * label matching consistent without threading a new field through the
+ * `Question` type.
+ */
+export function romanModeByParent(
+  questions: { parentNumber?: string; displayNumber: string }[]
+): Map<string, boolean> {
+  const groups = new Map<string, { count: number; tokens: string[] }>();
+  for (const q of questions) {
+    const key = groupKeyFor(q.displayNumber, q.parentNumber);
+    const entry = groups.get(key) ?? { count: 0, tokens: [] };
+    entry.count += 1;
+    entry.tokens.push(...subPartTokens(q.displayNumber));
+    groups.set(key, entry);
+  }
+  const mode = new Map<string, boolean>();
+  for (const [key, { count, tokens }] of groups) {
+    mode.set(key, count <= 1 ? true : groupPrefersRoman(tokens));
+  }
+  return mode;
 }
 
 export function slugify(input: string): string {
@@ -174,6 +231,17 @@ export function reconcileQuestions(pages: PageQuestions[]): Question[] {
     const count = idCounts.get(base) ?? 0;
     idCounts.set(base, count + 1);
     q.id = count === 0 ? base : `${base}-${count}`;
+  }
+
+  // Resolve roman-vs-letter ambiguity per sibling group now that parent
+  // numbers are settled and dedup is final — see groupPrefersRoman in
+  // lib/roman.ts for why a single ambiguous character can't be resolved
+  // per-token in isolation (a real a-b-c-d-e-f sequence needs letter
+  // mode; a real i-ii-iii-iv-v sequence needs roman mode).
+  const romanMode = romanModeByParent(deduped);
+  for (const q of deduped) {
+    const mode = romanMode.get(groupKeyFor(q.displayNumber, q.parentNumber)) ?? true;
+    q.sortKey = parseSortKey(q.displayNumber, q.sortKey, mode);
   }
 
   // Final sort: printed order via sortKey, tie-broken by page/discovery order.
