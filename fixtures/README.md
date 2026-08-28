@@ -21,6 +21,38 @@ to it, which the UI correctly surfaces as **"Needs review"** rather than a
 silent wrong answer — zero silent wrong mappings, low-confidence flagged
 instead. Not a bug.
 
+`sub-parts/` — a synthetic two-column paper exercising a lettered sub-part
+group (11a/11b/11c) and a roman-numeral sub-part group (12i/12ii/12iii)
+together, plus a reading-order trap (Section A's four questions are laid
+out in two columns; left column must finish before right, even though 3/4
+sit visually to the right of 1/2). Run live against the real pipeline:
+**all 10 questions extracted, in the exact correct printed order**
+(1,2,3,4, 11(a),11(b),11(c), 12(i),12(ii),12(iii) — Section A before
+Section B, left column before right, no stray "11."/"12." stem-line
+entries), **all 10 mapped by exact label at high confidence**, 0 unanswered,
+0 unmatched. This is also the direct regression test for a real bug fixed
+this session — `subPartIndex` used to treat any bare `c`/`d`/`v`/`x`/`l`/`m`
+as a roman numeral unconditionally, which silently reordered lettered
+sequences past their 3rd item and could collide two different sub-parts
+(a lettered `(e)` and a roman `(v)` both canonicalised to the same key).
+Both the lettered and roman groups in this fixture now resolve correctly
+side by side.
+
+`chaos/` — a synthetic paper exercising four separate edge cases at once:
+an answer written **out of printed order** (Q4's answer is written before
+Q1's), a **genuinely unlabeled** answer that must still be matched by
+position/content, an answer **mislabelled "7"** — a question number that
+doesn't exist on the paper — that must fail label matching and still
+resolve to the right question, and one answer that's **entirely off-topic**
+and must stay unmatched rather than be force-assigned. Run live against
+the real pipeline: **5/5 questions correctly answered, 0 unanswered, 1
+unmatched** (exactly the off-topic one) — Q1 matched by label at 97%
+despite being written second on the page; the unlabeled answer resolved
+via positional narrowing at 55%, correctly flagged **"Needs review"**
+rather than presented as certain; the "mislabelled 7" answer resolved via
+positional narrowing at 65%, also correctly flagged for review — zero
+silent wrong mappings, exactly the design goal.
+
 ## Format
 
 Each fixture directory holds:
@@ -60,9 +92,11 @@ is built for.
 
 ## Remaining fixture sets (not yet built)
 
-The natural set to build out is five: clean baseline (done), sub-parts,
-chaos (out-of-order + nonexistent question), spanning (multi-page answer),
-and messy (rough work + strike-through + illegible + diagram).
-`clean-baseline` already exercises struck-through and rough-work from the
-"messy" set and sub-parts from the "sub-parts" set. The chaos and spanning
-sets need real multi-page content and are the natural next fixtures to add.
+Three of the natural five are done and verified live: clean baseline,
+sub-parts, and chaos. `clean-baseline` already exercises struck-through
+and rough-work from the "messy" set too, so the one genuinely open gap is
+**spanning** — an answer that runs across a page break, exercising
+`continues_on_next_page`/`continues_from_previous_page` stitching on the
+*answer* side specifically (question-side page-break stitching already
+has both a fixture case and unit coverage). Needs real multi-page content
+to be meaningful, which is why it's the one still outstanding.

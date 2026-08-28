@@ -143,16 +143,30 @@ app recolors from that one file.
 
 ## Accuracy
 
-Verified live against the bundled sample (`fixtures/clean-baseline`, real
-Gemini calls, no fabricated numbers): **7/7 questions extracted in printed
-order** with the struck-through/clean duplicate for Q1 both preserved and
-correctly disambiguated; **6/7 answered questions mapped correctly by exact
-label** (0.97 confidence each); the unanswered question was correctly
-graded 0/3 with "student did not attempt" feedback, though the mapping
-engine's positional-narrowing step attached a low-confidence (65%) guess to
-it — flagged **"Needs review"** rather than presented as fact, which is
-exactly the point: zero silent wrong mappings. See `fixtures/README.md`
-for the full harness and how to extend it with real handwritten scans.
+Verified live against three fixtures (real Gemini calls, no fabricated
+numbers — see `fixtures/README.md` for full detail on each):
+
+- **`clean-baseline`** — 7/7 questions extracted in printed order, with the
+  struck-through/clean duplicate for Q1 correctly disambiguated; 6/7
+  answered questions mapped by exact label (0.97 confidence); the
+  genuinely-unanswered question correctly graded 0/3, though the mapping
+  engine's positional step attached a low-confidence (65%) guess to it —
+  flagged **"Needs review"** rather than presented as fact.
+- **`sub-parts`** — 10/10 questions extracted in exact printed order
+  (two-column reading order, a lettered sub-part group, and a roman-numeral
+  sub-part group all resolved correctly side by side), all 10 mapped by
+  exact label.
+- **`chaos`** — an answer written out of order, one genuinely unlabeled
+  answer, one mislabelled with a question number that doesn't exist on the
+  paper, and one entirely off-topic answer, all on one page: 5/5 real
+  questions correctly answered (0 unanswered), the off-topic answer
+  correctly stayed unmatched instead of being force-assigned, and both the
+  unlabeled and mislabelled answers were correctly resolved via positional
+  narrowing and flagged **"Needs review"** rather than silently trusted.
+
+Zero silent wrong mappings across all three — every low-confidence match is
+surfaced, never presented as fact. See `fixtures/README.md` for the full
+harness and how to extend it with real handwritten scans.
 
 ## Deployment
 
