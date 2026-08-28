@@ -1,15 +1,18 @@
-import { Bell, ChevronDown, HelpCircle, Sparkles } from "lucide-react";
+import { Bell, ChevronDown, FileText, HelpCircle, Sparkles } from "lucide-react";
 
 /**
  * The app shell's top bar — breadcrumb, help, notifications, and the
  * signed-in teacher, echoing the wider product's chrome. Static; only the
- * Exams flow beneath it is functional.
+ * Exams flow beneath it is functional. Desktop only (`md:` and up) —
+ * MobileHeader.tsx replaces this + Sidebar together below that, matching
+ * the Figma file's phone frames.
  */
 export function TopBar({ crumb = "Exams" }: { crumb?: string }) {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-white px-6">
+    <header className="hidden h-16 shrink-0 items-center justify-between border-b border-line bg-white px-6 md:flex">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span aria-hidden>←</span>
+        <FileText className="size-3.5" aria-hidden />
         <span className="font-medium text-foreground">{crumb}</span>
       </div>
       <div className="flex items-center gap-4">

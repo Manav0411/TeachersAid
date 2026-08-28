@@ -37,6 +37,11 @@ export function ReviewScreen({
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [showUnmatched, setShowUnmatched] = useState(false);
+  // Below `lg` the question list and answer sheet can't both fit — the
+  // Figma phone frame uses a "Questions" / "Answer Sheet" tab switcher
+  // instead of stacking both panels. Ignored at `lg:` and up, where both
+  // panels show side by side regardless of this value.
+  const [mobileTab, setMobileTab] = useState<"questions" | "answer-sheet">("questions");
   // ?debug=boxes: overlay pre-tighten (merged) vs. final regions for every
   // segment, to visually audit box-merge/ink-tightening quality. Read via
   // window.location directly (not next/navigation) so it never affects
@@ -163,9 +168,52 @@ export function ReviewScreen({
           </div>
         </div>
 
+        <div className="flex gap-1 border-b border-line bg-white p-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab("questions")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
+              mobileTab === "questions" ? "bg-ink text-white" : "text-muted-foreground hover:bg-secondary/60"
+            )}
+          >
+            Questions
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("answer-sheet")}
+            className={cn(
+              "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
+              mobileTab === "answer-sheet" ? "bg-ink text-white" : "text-muted-foreground hover:bg-secondary/60"
+            )}
+          >
+            Answer Sheet
+          </button>
+        </div>
+
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 bg-page-working p-4 lg:grid-cols-[380px_1fr]">
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+          <div
+            className={cn(
+              "min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm lg:flex",
+              mobileTab === "questions" ? "flex" : "hidden"
+            )}
+          >
             <div className="border-b border-line p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Extracted Questions <span className="font-normal text-muted-foreground">(from question paper)</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allExpanded = visibleQuestions.length > 0 && visibleQuestions.every((q) => expandedIds.has(q.id));
+                    setExpandedIds(allExpanded ? new Set() : new Set(visibleQuestions.map((q) => q.id)));
+                  }}
+                  className="shrink-0 text-xs font-medium text-brand-to hover:underline"
+                >
+                  {visibleQuestions.length > 0 && visibleQuestions.every((q) => expandedIds.has(q.id)) ? "Collapse all" : "Expand all"}
+                </button>
+              </div>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -205,7 +253,14 @@ export function ReviewScreen({
                   segments={(mappingByQuestion.get(q.id)?.segmentIds ?? []).map((id) => segmentsById.get(id)!).filter(Boolean)}
                   isSelected={q.id === selectedQuestionId}
                   isExpanded={expandedIds.has(q.id)}
-                  onSelect={() => setSelectedQuestionId(q.id)}
+                  onSelect={() => {
+                    setSelectedQuestionId(q.id);
+                    // On mobile, jump straight to the highlighted ink —
+                    // matches the Figma phone frame's flow (tap a
+                    // question, see its answer). No-op at `lg:` and up,
+                    // where both panels are already visible.
+                    setMobileTab("answer-sheet");
+                  }}
                   onToggleExpand={() =>
                     setExpandedIds((prev) => {
                       const next = new Set(prev);
@@ -227,7 +282,12 @@ export function ReviewScreen({
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col gap-3">
+          <div
+            className={cn(
+              "min-h-0 flex-col gap-3 lg:flex",
+              mobileTab === "answer-sheet" ? "flex" : "hidden"
+            )}
+          >
             <AnswerSheetPanel
               pages={session.answerPages}
               activeRegions={activeRegions}

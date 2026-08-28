@@ -6,11 +6,14 @@ import { cn } from "@/lib/utils";
 
 const NEEDS_REVIEW_THRESHOLD = 0.7;
 
+/** Tinted pill background + text color for a score, matching the Figma
+ * design's colored score badges (green/red/amber) rather than plain
+ * colored text. */
 export function scoreChipClass(grade: Grade | undefined): string {
-  if (!grade) return "text-muted-foreground";
-  if (grade.verdict === "unanswered" || grade.awarded === 0) return "text-danger";
-  if (grade.awarded >= grade.max) return "text-success";
-  return "text-amber-600";
+  if (!grade) return "bg-secondary text-muted-foreground";
+  if (grade.verdict === "unanswered" || grade.awarded === 0) return "bg-danger/10 text-danger";
+  if (grade.awarded >= grade.max) return "bg-success/10 text-success";
+  return "bg-amber-100 text-amber-700";
 }
 
 export function QuestionRow({
@@ -81,7 +84,12 @@ export function QuestionRow({
               Needs review
             </span>
           )}
-          <span className={cn("shrink-0 text-xs font-semibold tabular-nums", scoreChipClass(grade))}>
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+              scoreChipClass(grade)
+            )}
+          >
             {grade ? `${grade.awarded}/${grade.max}` : "—"}
           </span>
         </button>
