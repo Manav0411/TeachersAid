@@ -74,7 +74,7 @@ export function UploadScreen({
             retheme's blue/green palette. */}
         <div className="my-8 flex size-24 items-center justify-center overflow-hidden rounded-full bg-brand-from/15">
           <Image
-            src="/mascot.png"
+            src="/mascot-v2.png"
             alt=""
             width={96}
             height={96}
