@@ -163,10 +163,24 @@ numbers — see `fixtures/README.md` for full detail on each):
   correctly stayed unmatched instead of being force-assigned, and both the
   unlabeled and mislabelled answers were correctly resolved via positional
   narrowing and flagged **"Needs review"** rather than silently trusted.
+- **`handwritten-real`** — the one genuinely handwritten fixture (real ink,
+  photographed, not typed): 7/7 answered, 0 unmatched, across a real page
+  break. A correction marked with an underline instead of the expected
+  diagonal strike was still recognised correctly; an ambiguously-written
+  word ("captured," legible but messy) transcribed correctly; a
+  deliberately incomplete answer was graded 1/2 with the specific missing
+  point named, not just penalised vaguely; an answer the student fully
+  scratched out (not left blank) came back with an empty transcript and
+  honest "No response provided" feedback rather than being graded on the
+  crossed-out content; the highlight box tightened correctly to real ink
+  and strike marks, not just typed text. See `fixtures/README.md` for one
+  honest nuance found here (a struck-through-only answer's mapping
+  *status* still reads "answered" even though its *grade* correctly comes
+  back 0 — the score is right, the status label is arguably misleading).
 
-Zero silent wrong mappings across all three — every low-confidence match is
-surfaced, never presented as fact. See `fixtures/README.md` for the full
-harness and how to extend it with real handwritten scans.
+Zero silent wrong mappings across all four fixtures — every low-confidence
+match is surfaced, never presented as fact. See `fixtures/README.md` for
+the full harness.
 
 ## Deployment
 

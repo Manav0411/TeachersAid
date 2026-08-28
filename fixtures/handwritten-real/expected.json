@@ -1,0 +1,22 @@
+{
+  "description": "The one genuinely handwritten fixture — real ink, real cursive, photographed by the project's own author, answering fixtures/clean-baseline's question paper. Exercises: a correction marked with an underline rather than a diagonal strike (Q1), an answer legible but genuinely ambiguous mid-word ('captured', could misread as 'saptured') (Q4), a deliberately incomplete answer for partial-credit grading (Q5(b)), a fully scratched-out attempt rather than a truly blank page (Q6), and a real page break (Q5(b) and Q6 are on page 2).",
+  "questions": [
+    { "displayNumber": "1.", "marks": 1, "type": "short" },
+    { "displayNumber": "2.", "marks": 1, "type": "mcq" },
+    { "displayNumber": "3.", "marks": 2, "type": "short" },
+    { "displayNumber": "4.", "marks": 3, "type": "long" },
+    { "displayNumber": "5 (a).", "marks": 2, "type": "short", "parentNumber": "5" },
+    { "displayNumber": "5 (b).", "marks": 2, "type": "short", "parentNumber": "5" },
+    { "displayNumber": "6.", "marks": 3, "type": "long" }
+  ],
+  "mappings": {
+    "1.": { "status": "answered", "method": "label", "note": "'Nucleus' crossed out with an underline (not a diagonal strike) and corrected to 'Mitochondria' — must still be recognised as a correction, not graded on the wrong word" },
+    "2.": { "status": "answered", "method": "label" },
+    "3.": { "status": "answered", "method": "label" },
+    "4.": { "status": "answered", "method": "label", "note": "contains the ambiguous handwritten word 'captured' — a legibility stress test" },
+    "5 (a).": { "status": "answered", "method": "label" },
+    "5 (b).": { "status": "answered", "method": "label", "note": "deliberately incomplete (one factor given, two asked) — grading should award partial credit and name the missing factor, not just check 'did they write something'" },
+    "6.": { "status": "answered", "note": "student started an answer then fully scratched it out with diagonal strike lines (not left blank) — should score 0 with honest 'no response' feedback, even though mapping's own status field currently reads 'answered' rather than 'unanswered' for this case; see fixtures/README.md" }
+  },
+  "edgeCasesCovered": [1, 3, 8, 9]
+}

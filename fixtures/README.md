@@ -53,6 +53,44 @@ rather than presented as certain; the "mislabelled 7" answer resolved via
 positional narrowing at 65%, also correctly flagged for review — zero
 silent wrong mappings, exactly the design goal.
 
+`handwritten-real/` — the one genuinely handwritten fixture. Every other
+fixture is synthetic (typed) text, useful for exercising extraction/mapping
+*logic* but not real handwriting recognition. This one is real ink, real
+cursive, photographed by hand, answering `clean-baseline`'s question paper
+across two real pages. Run live against the real pipeline: **7/7 questions
+answered, 0 unmatched.** Specifically —
+
+- **Q1**: "Nucleus" corrected to "Mitochondria," but the correction mark in
+  the actual photo is an **underline**, not the diagonal strike the model
+  was expecting — still correctly recognised as a correction (transcript:
+  `~~Nucleus~~ Mitochondria`), graded 1/1 on the corrected word only.
+- **Q4**: contains the handwritten word "captured" written ambiguously
+  enough that it could misread as "saptured" — transcribed correctly
+  regardless; graded 2.5/3, docked for a real content gap (missing the
+  role of chlorophyll/light energy), not a transcription error.
+- **Q5(b)**: deliberately answered with only one of the two requested
+  factors — graded 1/2, with feedback that correctly names the specific
+  missing factor rather than just penalising vaguely. Real evidence
+  grading checks completeness, not just plausibility.
+- **Q6**: the student started an answer, then fully scratched it out with
+  diagonal strike lines (not a blank page). Transcript correctly comes back
+  empty (the struck line is filtered out entirely), graded 0/3 with honest
+  **"No response provided"** feedback — the right teacher-facing outcome.
+  One honest wrinkle: the mapping's own `status` field still reads
+  `"answered"` (a segment did get matched) rather than `"unanswered"`,
+  since status is set at match time, before grading discounts the
+  struck-through content. The score and feedback are correct either way,
+  but a teacher scanning by status label alone would see "answered" for a
+  question the student effectively never attempted — worth a UX pass
+  (e.g. deriving status from grade content, not match time) if this comes
+  up again, not fixed here since it doesn't produce a wrong grade.
+- **Highlighting**: the box on Q6 tightens to the real ink and the actual
+  diagonal strike marks, on page 2 — first real test of ink-tightening
+  against actual handwriting stroke width/slant rather than typed text,
+  and it holds up.
+- **Page break**: 5(b) and 6 are genuinely on page 2; both mapped
+  correctly, no cross-page confusion.
+
 ## Format
 
 Each fixture directory holds:
